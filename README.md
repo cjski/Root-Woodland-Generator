@@ -28,6 +28,9 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 - Hit the `U` key to do an update of the Woodland war (As outlined in the Travelers and Outsiders book)
   - This will cause the factions to build, attack, fortify, spread or do any other specific actions unique to their faction
 ![image](https://github.com/user-attachments/assets/166b30a4-96c1-4f32-b542-cded9541d79c)
+- Hover over a clearing to see extra information associated with it, like war status and local denizens
+![image](https://github.com/user-attachments/assets/850d7a29-90a4-4561-8990-f067ea79a8a6)
+
 
 ## Customizing the Woodland
 - The basic customization options can be found in `GenerateWoodland.py`, just do a search for `EDITABLE VARIABLES`

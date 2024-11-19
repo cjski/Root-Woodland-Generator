@@ -22,6 +22,8 @@ class DTType(Enum):
 class Woodland:
     # Below this number things don't really work well
     minClearings = 4
+    # A lot of the randomness is based on having 12 clearings. Use this to scale parts of the generation based on the real number
+    expectedClearings = 12
     # Clearings won't be spawned outside of this space along the edge of the map
     clearingBufferPercentage = 0.1
     # Size of the grid cells used in clearing placement
@@ -1405,7 +1407,12 @@ class Woodland:
     def generateLake( self ):
         lakeTris = [ random.randint( 0, len( self.tri.simplices ) - 1 ) ]
         visited = [ False for i in range( len( self.tri.simplices ) ) ]
+
+        # Scale some of the factors we use in the lake generation by how many clearings we have
+        numClearings = len( self.clearings )
         
+        minLakeClearings = Water.minLakeClearings
+        maxLakeClearings = Water.maxLakeClearings * numClearings / self.expectedClearings
         
         numClearings = len( self.clearings )
         lakeClearings = []
@@ -1427,11 +1434,11 @@ class Woodland:
                     possibleNeighbours.append( currNeighbour )
                     visited[currNeighbour] = True
         
-        currMaxClearings = Water.maxLakeClearings
+        currMaxClearings = maxLakeClearings
 
         while ( len( possibleNeighbours ) > 0 ):
             # Just check if we can stop adding clearings
-            if ( len( lakeClearings ) >= Water.minLakeClearings ):
+            if ( len( lakeClearings ) >= minLakeClearings ):
                 roll = rollDie( 6, 2 ) - len( lakeClearings )
                 if ( roll < 7 ):
                     currMaxClearings = len( lakeClearings )
@@ -1506,6 +1513,8 @@ class Woodland:
             chance = random.random()
             if ( chance > Water.lakeEdgeAddChance ):
                 return False
+
+        maxDestroyablePaths = Water.maxDestroyablePaths * numClearings / self.expectedClearings
         
         if ( len( pathsToDestroy ) + len( destroyedPathPoints ) <= Water.maxDestroyablePaths and len( lakeClearingsToAdd ) + len( lakeClearings ) <= currMaxClearings ):
             for i in range(numClearings):

@@ -5,9 +5,11 @@ import random
 import math
 
 class Water:
-    maxLakeClearings = 6
+    # These are the expected values for 12 clearings. Above that it'll be scaled
+    maxLakeClearings = 5
     minLakeClearings = 3
     maxDestroyablePaths = 2
+    
     minAuxPoints = 3
     maxAuxPoints = 10
     auxPointsVariance = 20

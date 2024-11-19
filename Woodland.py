@@ -1516,7 +1516,7 @@ class Woodland:
 
         maxDestroyablePaths = Water.maxDestroyablePaths * numClearings / self.expectedClearings
         
-        if ( len( pathsToDestroy ) + len( destroyedPathPoints ) <= Water.maxDestroyablePaths and len( lakeClearingsToAdd ) + len( lakeClearings ) <= currMaxClearings ):
+        if ( len( pathsToDestroy ) + len( destroyedPathPoints ) <= maxDestroyablePaths and len( lakeClearingsToAdd ) + len( lakeClearings ) <= currMaxClearings ):
             for i in range(numClearings):
                 if ( len( self.clearings[i].connected ) <= pathsToRemoveFromEachClearing[i] ):
                     return False

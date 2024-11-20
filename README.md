@@ -1,6 +1,6 @@
 # Root-Woodland-Generator
 
-![image](https://github.com/user-attachments/assets/6b665a93-20a2-4c5a-84fc-c7f4597bda87)
+![image](https://github.com/user-attachments/assets/9a0cb3b8-ef7b-4c46-b667-eac555b517a6)
 
 This is a generator for quickly creating random Woodland maps for the Root RPG. The majority of the logic is taken straight from the Root Core Book and Travelers and Outsiders (For the additional factions) with a few tweaks to make the maps look good and more connected. 
 
@@ -12,12 +12,14 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 - Faction wartime updates from the Travelers and Outsiders book
 - Landmark generation for interesting locations outside of the clearings
 - Clearing war status system
+- Customization options
 
 ## Necessary Modules
 - python
 - pygame
 - numpy
 - scipy
+- pygame_widgets
   
 ## How to use
 - Install python and the modules listed above
@@ -36,14 +38,14 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 
 
 ## Customizing the Woodland
-- The basic customization options can be found in `GenerateWoodland.py`, just do a search for `EDITABLE VARIABLES`
-  - `mapSize`, `numClearings`, and `minClearingDist` will let you create more dense or sparse maps
+- The basic customization options are now in the UI for easier access and faster iteration of different maps, you can edit the size, number of clearings, and enabled features and factions
   - Note that the minimum number of Clearings will always be 4, below that the control doesn't work as well and maps don't look good
+  - The minimum map size is also 500 by 500 units, below that and it's too small to really see anything
 
 ![image](https://github.com/user-attachments/assets/8e364df4-ccc4-4069-bce9-bb541fdb0e3a)
 ![image](https://github.com/user-attachments/assets/a72263d3-b449-4480-b97b-25209b1aea37)
 
-- Outside of those, there are a ton of variables in the other files that you can tweak to make things look the way you want to
+- Outside of those, there are a ton of variables inside the files themselves that you can tweak to make things look the way you want to
 
 ![image](https://github.com/user-attachments/assets/cf34c4d5-7c27-4042-96be-6b2b0e5a02c0)
 

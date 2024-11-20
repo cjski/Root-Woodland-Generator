@@ -22,6 +22,7 @@ class DTType(Enum):
 class Woodland:
     # Below this number things don't really work well
     minClearings = 4
+    minSize = 500
     # A lot of the randomness is based on having 12 clearings. Use this to scale parts of the generation based on the real number
     expectedClearings = 12
     # Clearings won't be spawned outside of this space along the edge of the map
@@ -650,20 +651,23 @@ class Woodland:
                     "Corvid Conspiracy":    [corvidRoll,        [attack, fortify, stampCells, expandNetwork, enactPlot, evictTraders],              [culminatePlot],    [lossUpdate, None]],
                     }
 
-    def __init__(self, pos, size, minClearingDist, extraFactions=True ):
+    def __init__( self, pos, size, minClearingDist, enableLake=True, enableRiver=True, forceLake=False, forceRiver=False, enableMarquisate=True, enableEyrie=True, enableWoodlandAlliance=True,
+                  enableLizardCult=True, enableRiverfolk=True, enableDuchy=True, enableCorvids=True ):
         self.pos = pos
-        self.size = size
-        self.rect = [ pos[0], pos[1], size[0], size[1] ]
-        self.bottom     = pos[1]
-        self.left       = pos[0]
-        self.top        = pos[1] + size[1]
-        self.right      = pos[0] + size[0]
-        self.area       = size[1] * size[0]
-        self.woodlandBottom     = self.bottom + int( self.clearingBufferPercentage * size[1] )
-        self.woodlandLeft       = self.left + int( self.clearingBufferPercentage * size[0] )
-        self.woodlandTop        = self.top - int( self.clearingBufferPercentage * size[1] )
-        self.woodlandRight      = self.right - int( self.clearingBufferPercentage * size[0] )
-        self.minClearingDistSq = minClearingDist * minClearingDist
+        self.size = [ max( size[0], self.minSize ), max( size[1], self.minSize ) ]
+        self.minClearingDist = max( 10, minClearingDist )
+        
+        self.rect = [ self.pos[0], self.pos[1], self.size[0], self.size[1] ]
+        self.bottom     = self.pos[1]
+        self.left       = self.pos[0]
+        self.top        = self.pos[1] + self.size[1]
+        self.right      = self.pos[0] + self.size[0]
+        self.area       = self.size[1] * self.size[0]
+        self.woodlandBottom     = self.bottom + int( self.clearingBufferPercentage * self.size[1] )
+        self.woodlandLeft       = self.left + int( self.clearingBufferPercentage * self.size[0] )
+        self.woodlandTop        = self.top - int( self.clearingBufferPercentage * self.size[1] )
+        self.woodlandRight      = self.right - int( self.clearingBufferPercentage * self.size[0] )
+        self.minClearingDistSq = self.minClearingDist * self.minClearingDist
         
         self.tri = None
         self.dtTypes = []
@@ -693,7 +697,28 @@ class Woodland:
                     "None": [[], [], []],
                     }
 
-        self.extraFactions = extraFactions
+        self.forceLake = forceLake
+        self.forceRiver = forceRiver
+        
+        self.enableLake = enableLake
+        self.enableRiver = enableRiver
+        
+        self.enableMarquisate = enableMarquisate
+        self.enableEyrie = enableEyrie
+        self.enableWoodlandAlliance = enableWoodlandAlliance
+        self.enableLizardCult = enableLizardCult
+        self.enableRiverfolk = enableRiverfolk
+        self.enableDuchy = enableDuchy
+        self.enableCorvids = enableCorvids
+
+        self.enabledFactions = { "Marquisate"           : self.enableMarquisate,
+                                 "Eyrie"                : self.enableEyrie,
+                                 "Woodland Alliance"    : self.enableWoodlandAlliance,
+                                 "Lizard Cult"          : self.enableLizardCult,
+                                 "Riverfolk"            : self.enableRiverfolk,
+                                 "Grand Duchy"          : self.enableDuchy,
+                                 "Corvid Conspiracy"    : self.enableCorvids,
+                                 }
 
         
     def update( self ):
@@ -713,40 +738,43 @@ class Woodland:
         
         for factionIndex in range( len( factionControl ) ):
             factionName = factionControl[factionIndex][1]
-            numControl = factionControl[factionIndex][0]
-            rollFcn = self.controlFcns[ factionName ][0]
-            minorBoonFcns = self.controlFcns[ factionName ][1]
-            majorBoonFcns = self.controlFcns[ factionName ][2]
-            lossFcns = self.controlFcns[ factionName ][3]
 
-            rollBonus = rollFcn( self )
-            
-            roll = rollDie( 6, 2 ) + rollBonus
-            if factionIndex == 0:
-                roll -= 1
-            if numControl == 0:
-                roll += 2
+            if self.enabledFactions[ factionName ]:
+                numControl = factionControl[factionIndex][0]
+                rollFcn = self.controlFcns[ factionName ][0]
+                minorBoonFcns = self.controlFcns[ factionName ][1]
+                majorBoonFcns = self.controlFcns[ factionName ][2]
+                lossFcns = self.controlFcns[ factionName ][3]
 
-            # Counting the roll data to see how good the values guys get
-            self.controlCountingData[ factionName ][2].append( roll )
-            
-            toCall = []
-            
-            if roll >= 10:
-                # If we don't have any major boons do two minor boons
-                if ( len( majorBoonFcns ) == 0 or random.random() < 0.5 ) and len( minorBoonFcns ) > 0:
-                    toCall = np.random.choice( minorBoonFcns, 2, replace=True )
-                elif len( majorBoonFcns ) > 0:
-                    toCall = random.sample( majorBoonFcns, 1 )
-            elif roll >= 7 and len( minorBoonFcns ) > 0:
-                toCall = random.sample( minorBoonFcns, 1 )
-            elif len( lossFcns ) > 0:
-                toCall = random.sample( lossFcns, 1 )
+                rollBonus = rollFcn( self )
+                
+                roll = rollDie( 6, 2 ) + rollBonus
+                if factionIndex == 0:
+                    roll -= 1
+                if numControl == 0:
+                    roll += 2
 
-            for call in toCall:
-                if call != None:
-                    call( self, factionName )
-            
+                # Counting the roll data to see how good the values guys get
+                self.controlCountingData[ factionName ][2].append( roll )
+                
+                toCall = []
+                
+                if roll >= 10:
+                    # If we don't have any major boons do two minor boons
+                    if ( len( majorBoonFcns ) == 0 or random.random() < 0.5 ) and len( minorBoonFcns ) > 0:
+                        toCall = np.random.choice( minorBoonFcns, 2, replace=True )
+                    elif len( majorBoonFcns ) > 0:
+                        toCall = random.sample( majorBoonFcns, 1 )
+                elif roll >= 7 and len( minorBoonFcns ) > 0:
+                    toCall = random.sample( minorBoonFcns, 1 )
+                elif len( lossFcns ) > 0:
+                    toCall = random.sample( lossFcns, 1 )
+
+                for call in toCall:
+                    if call != None:
+                        call( self, factionName )
+
+        # This is debug data for counting how much control each faction has        
         for clearing in self.clearings:
             control = clearing.control
             if control in self.controlCountingData:
@@ -824,7 +852,8 @@ class Woodland:
         pygame.draw.rect( screen, LIGHT_GREEN, self.rect )
 
         self.drawDecor( screen )
-        self.water.draw( screen )
+        if self.water:
+            self.water.draw( screen )
         self.drawBridges( screen )
         self.drawPaths( screen )
         self.drawLandmarks( screen )
@@ -1220,6 +1249,7 @@ class Woodland:
 
         gridWidth = self.woodlandRight - self.woodlandLeft
         gridHeight = self.woodlandTop - self.woodlandBottom
+        
         gridX = int( gridWidth / self.gridSize )
         gridY = int( gridHeight / self.gridSize )
         gridN = gridX * gridY
@@ -1227,7 +1257,7 @@ class Woodland:
         useablePoints = [ [ True for _ in range( gridY ) ] for _ in range( gridX ) ]
         # The spaces around the clearing we have to check and clear from useable points
         gridSpacesToClear = int( math.sqrt( self.minClearingDistSq ) / self.gridSize )
-
+        
         numSpawnedClearings = 0
         pointIndex = 0
 
@@ -1786,37 +1816,43 @@ class Woodland:
         
         chance = rollDie( 6, 1 )
         
-        if chance > 3:
+        if self.forceLake or ( self.enableLake and chance > 3 ):
             self.generateLake()
 
-        if chance < 6:
+        if self.forceRiver or ( self.enableRiver and chance < 5 ):
             self.generateRiver()
             self.generateBridges()
 
-        self.water = Water( self.lakeTris, self.riverHullPoints, self )
+        if len( self.lakeTris ) > 0 or len( self.riverHullPoints ) > 0:
+            self.water = Water( self.lakeTris, self.riverHullPoints, self )
         
     def generateWoodlandControl( self ):
         marquisateCorner = random.randint(0, 3)
-        self.generateMarquisateControl( self.corners[marquisateCorner] )
+        if self.enableMarquisate:
+            self.generateMarquisateControl( self.corners[marquisateCorner] )
 
         eyrieCorner = self.oppositeCorners[ marquisateCorner ]
-        self.generateEyrieControl( self.corners[eyrieCorner] )
+        if self.enableEyrie:
+            self.generateEyrieControl( self.corners[eyrieCorner] )
 
-        self.generateWoodlandAllianceControl()
+        if self.enableWoodlandAlliance:
+            self.generateWoodlandAllianceControl()
 
-        # Generates the additional woodland control for the 4 expansion factions
-        if self.extraFactions:
-            otherCorners = []
-            for i in range(len(self.corners)):
-                if ( i != marquisateCorner and i != eyrieCorner ):
-                    otherCorners.append(i)
+        otherCorners = []
+        for i in range(len(self.corners)):
+            if ( i != marquisateCorner and i != eyrieCorner ):
+                otherCorners.append(i)
+                
+        lizardCultCorner = random.sample( otherCorners, 1 )[0]
+        grandDuchyCorner = self.oppositeCorners[ lizardCultCorner ]
 
-            lizardCultCorner = random.sample( otherCorners, 1 )[0]
-            grandDuchyCorner = self.oppositeCorners[ lizardCultCorner ]
-
+        if self.enableLizardCult:
             self.generateLizardCultControl( self.corners[ lizardCultCorner ] )
+        if self.enableRiverfolk:
             self.generateRiverfolkControl()
+        if self.enableDuchy:
             self.generateGrandDuchyControl( self.corners[ grandDuchyCorner ] )
+        if self.enableCorvids:
             self.generateCorvidConspiracyControl()
 
     def generateMarquisateControl( self, corner ):

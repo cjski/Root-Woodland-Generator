@@ -1,15 +1,92 @@
 import pygame
 pygame.init()
+
 from WoodlandCommon import *
 from Woodland import *
 
 import random
 import math
 import numpy as np
+import pygame_widgets
+from pygame_widgets.textbox import TextBox
+from pygame_widgets.toggle import Toggle
 
-"""
-GAME
-"""
+
+# Helper class to store the config data
+class ConfigData:
+    def __init__( self ):
+        self.mapWidth = 1000
+        self.mapHeight = 800
+        self.numClearings = 12
+        self.minClearingDist = 100
+
+        self.forceLake = False
+        self.forceRiver = False
+        
+        self.enableLake = True
+        self.enableRiver = True
+        
+        self.enableMarquisate = True
+        self.enableEyrie = True
+        self.enableWoodlandAlliance = True
+        self.enableLizardCult = True
+        self.enableRiverfolk = True
+        self.enableDuchy = True
+        self.enableCorvids = True
+
+    def getTextBoxAsInt( widget ):
+        text = widget.getText()
+        if text.isdigit():
+            return int( text )
+        else:
+            return 0
+
+    def setMapWidth( config, widget ):
+        config.mapWidth = ConfigData.getTextBoxAsInt( widget )
+
+    def setMapHeight( config, widget ):
+        config.mapHeight = ConfigData.getTextBoxAsInt( widget )
+
+    def setNumClearings( config, widget ):
+        config.numClearings = ConfigData.getTextBoxAsInt( widget )
+
+    def setMinClearingDist( config, widget ):
+        config.minClearingDist = ConfigData.getTextBoxAsInt( widget )
+
+    def setForceLake( config, widget ):
+        config.forceLake = widget.getValue()
+
+    def setForceRiver( config, widget ):
+        config.forceRiver = widget.getValue()
+
+    def setEnableLake( config, widget ):
+        config.enableLake = widget.getValue()
+
+    def setEnableRiver( config, widget ):
+        config.enableRiver = widget.getValue()
+
+    def setEnableMarquisate( config, widget ):
+        config.enableMarquisate = widget.getValue()
+
+    def setEnableEyrie( config, widget ):
+        config.enableEyrie = widget.getValue()
+
+    def setEnableWoodlandAlliance( config, widget ):
+        config.enableWoodlandAlliance = widget.getValue()
+
+    def setEnableLizardCult( config, widget ):
+        config.enableLizardCult = widget.getValue()
+
+    def setEnableRiverfolk( config, widget ):
+        config.enableRiverfolk = widget.getValue()
+
+    def setEnableDuchy( config, widget ):
+        config.enableDuchy = widget.getValue()
+
+    def setEnableCorvids( config, widget ):
+        config.enableCorvids = widget.getValue()
+    
+        
 def drawLegend( screen, pos, spacing ):
     # First draw the factions legend
     factionDrawPos = pos
@@ -81,7 +158,177 @@ def drawLegend( screen, pos, spacing ):
 
     legendSize = ( iconsDrawX + iconsWidth, factionDrawSize[1] + 2 * spacing + featureDrawSize[1] )
     return legendSize
+
+
+def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
+    maxWidth = 0
+    widgets = []
+    widgetCallbacks = []
     
+    # Draw the title
+    titlePos = pos
+    titleFont = font16
+    titleText = "Woodland Settings"
+
+    titleSize = titleFont.size( titleText )
+    drawText( screen, titlePos, titleText, titleFont, BLACK )
+
+    maxWidth = max( maxWidth, titleSize[0] )
+
+    # Common toggles for the basic info
+    commonPos = [ titlePos[0], titlePos[1] + titleSize[1] + spacing ]
+    commonFont = font14
+    commonText = "Common"
+
+    commonTextSize = commonFont.size( commonText )
+    drawText( screen, commonPos, commonText, commonFont, BLACK )
+
+    maxWidth = max( maxWidth, commonTextSize[0] )
+
+    commonVarsPos = [ commonPos[0], commonPos[1] + commonTextSize[1] + spacing ]
+    commonVarsTexts = [ "Map Width", "Map Height", "Number of Clearings", "Minimum Space Between Clearings" ]
+    commonVarsCallbacks = [ ConfigData.setMapWidth, ConfigData.setMapHeight, ConfigData.setNumClearings, ConfigData.setMinClearingDist ]
+    commonVarsStartVals = [ str( configData.mapWidth ), str( configData.mapHeight ), str( configData.numClearings ), str( configData.minClearingDist ) ]
+    commonVarsFont = basicFont14
+    yOffset = 0
+    textBoxHeightBuffer = 10
+    textBoxHalfHeightBuffer = textBoxHeightBuffer / 2
+
+    for i in range( len( commonVarsTexts ) ):
+        text = commonVarsTexts[i]
+        textSize = commonVarsFont.size( text )
+        textBoxX = commonVarsPos[0]
+        textBoxY = commonVarsPos[1] + yOffset
+        textBoxWidth = 60
+        textBoxHeight = textSize[1] + textBoxHeightBuffer
+        
+        if createWidgets:
+            textBox = TextBox( screen, textBoxX, textBoxY, textBoxWidth, textBoxHeight,
+                               font=commonVarsFont, borderThickness=1 )
+            textBox.setText( commonVarsStartVals[i] )
+            widgets.append( textBox )
+            widgetCallbacks.append( commonVarsCallbacks[i] )
+        
+        textPos = [ textBoxX + textBoxWidth + 2 * spacing, textBoxY + textBoxHalfHeightBuffer ]
+        drawText( screen, textPos, text, commonVarsFont, BLACK )
+
+        yOffset += spacing + textBoxHeight
+
+        maxWidth = max( maxWidth, textSize[0] + textBoxWidth + spacing * 2 )
+
+    # Faction on and off toggles
+    factionsPos = [ commonVarsPos[0], commonVarsPos[1] + yOffset + spacing ]
+    factionsFont = font14
+    factionsText = "Factions Toggles"
+
+    factionsTextSize = factionsFont.size( factionsText )
+    drawText( screen, factionsPos, factionsText, factionsFont, BLACK )
+
+    maxWidth = max( maxWidth, factionsTextSize[0] )
+
+    factionNames = [ controlName for controlName in controlColours if controlName != "None" and controlName != "Denizens" ]
+    factionCallbacks = {
+        "Marquisate": ConfigData.setEnableMarquisate,
+        "Eyrie": ConfigData.setEnableEyrie,
+        "Woodland Alliance": ConfigData.setEnableWoodlandAlliance,
+        "Lizard Cult": ConfigData.setEnableLizardCult,
+        "Riverfolk": ConfigData.setEnableRiverfolk,
+        "Grand Duchy": ConfigData.setEnableDuchy,
+        "Corvid Conspiracy": ConfigData.setEnableCorvids,
+        }
+    factionStartVals = {
+        "Marquisate": configData.enableMarquisate,
+        "Eyrie": configData.enableEyrie,
+        "Woodland Alliance": configData.enableWoodlandAlliance,
+        "Lizard Cult": configData.enableLizardCult,
+        "Riverfolk": configData.enableRiverfolk,
+        "Grand Duchy": configData.enableDuchy,
+        "Corvid Conspiracy": configData.enableCorvids,
+        }
+    factionVarsPos = [ factionsPos[0], factionsPos[1] + factionsTextSize[1] + spacing ]
+    factionVarsFont = basicFont14
+    yOffset = 0
+    toggleExtraSpacing = 10
+    toggleHalfExtraSpacing = int( toggleExtraSpacing / 2 )
+    
+    for i in range( len( factionNames ) ):
+        text = factionNames[i]
+        textSize = factionVarsFont.size( text )
+
+        toggleX = factionVarsPos[0] + 2 * spacing
+        toggleY = factionVarsPos[1] + yOffset + toggleHalfExtraSpacing
+        toggleWidth = textSize[1]
+        toggleHeight = textSize[1]
+
+        if createWidgets:
+            startOn = True
+            if text in factionStartVals:
+                startOn = factionStartVals[text]
+            toggle = Toggle( screen, toggleX, toggleY, toggleWidth, toggleHeight, startOn=startOn )
+            widgets.append( toggle )
+
+            if text in factionCallbacks:
+                widgetCallbacks.append( factionCallbacks[text] )
+            else:
+                widgetCallbacks.append( None )
+
+        iconPos = [ toggleX + toggleWidth * 2 + spacing, toggleY ]
+        iconSize = textSize[1] 
+        drawFcn = Clearing.controlDict[ text ]
+        
+        if drawFcn != None:
+            drawFcn( screen, iconPos, iconSize )
+        
+        textPos = [ iconPos[0] + iconSize + spacing, iconPos[1] ]
+        drawText( screen, textPos, text, factionVarsFont, BLACK )
+
+        yOffset += spacing + toggleHeight + toggleHalfExtraSpacing * 2
+
+        maxWidth = max( maxWidth, textSize[0] + toggleWidth * 2 + iconSize + spacing * 5 )
+
+    # Map Generation variables and toggles
+    mapGenPos = [ factionVarsPos[0], factionVarsPos[1] + yOffset + spacing ]
+    mapGenFont = font14
+    mapGenText = "Map Generation Toggles"
+
+    mapGenSize = mapGenFont.size( mapGenText )
+    drawText( screen, mapGenPos, mapGenText, mapGenFont, BLACK )
+
+    maxWidth = max( maxWidth, mapGenSize[0] )
+
+    mapGenVarNames = [ "Enable Lake", "Force Lake Spawn", "Enable River", "Force River Spawn" ]
+    mapGenCallbacks = [ ConfigData.setEnableLake, ConfigData.setForceLake, ConfigData.setEnableRiver, ConfigData.setForceRiver ]
+    mapGenVarStartValues = [ configData.enableLake, configData.forceLake, configData.enableRiver, configData.forceRiver ]
+    mapGenVarsPos = [ mapGenPos[0], mapGenPos[1] + mapGenSize[1] + spacing ]
+    mapGenVarsFont = basicFont14
+    yOffset = 0
+    toggleExtraSpacing = 10
+    toggleHalfExtraSpacing = int( toggleExtraSpacing / 2 )
+    
+    for i in range( len( mapGenVarNames ) ):
+        text = mapGenVarNames[i]
+        textSize = mapGenVarsFont.size( text )
+
+        toggleX = mapGenVarsPos[0] + 2 * spacing
+        toggleY = mapGenVarsPos[1] + yOffset + toggleHalfExtraSpacing
+        toggleWidth = textSize[1]
+        toggleHeight = textSize[1]
+
+        if createWidgets:
+            toggle = Toggle( screen, toggleX, toggleY, toggleWidth, toggleHeight, startOn=mapGenVarStartValues[i] )
+            widgets.append( toggle )
+            widgetCallbacks.append( mapGenCallbacks[i] )
+
+        textPos = [ toggleX + toggleWidth * 2 + spacing, toggleY ]
+        drawText( screen, textPos, text, mapGenVarsFont, BLACK )
+
+        yOffset += spacing + toggleHeight + toggleHalfExtraSpacing * 2
+
+        maxWidth = max( maxWidth, textSize[0] + toggleWidth * 2 + spacing * 4 )
+
+    return ( [ maxWidth, commonPos[1] + yOffset ], widgets, widgetCallbacks )
+
+  
 def main():
     """
     //////// EDITABLE VARIABLES ///////
@@ -92,7 +339,7 @@ def main():
     numClearings = 12
     # Minimum distance between clearings. The map size needs to be big enough to handle the number of clearings
     # and the minimum distance between them or less clearings than set will spawn
-    minClearingDist = 150
+    minClearingDist = 100
     """
     ///////////////////////////////////
     """
@@ -101,37 +348,51 @@ def main():
     localInfoDrawDistSq = localInfoDrawDist * localInfoDrawDist
     # Spacing between items
     spacing = 3
-    # Buffer for the bottom and right edges of the map
     buffer = 15
+    # Buffer for the bottom and right edges of the map
     screen = pygame.display.set_mode( ( 1 ,1 ) )
     pygame.display.set_caption('Root Woodland')
+
+    configData = ConfigData()
     
     # Do this once to figure out the size of the legend so we can place the map in the right spot
     legendSize = drawLegend( screen, (0, 0), spacing )
 
     mapPos = ( legendSize[0] + spacing, 0 )
-    screenSize = ( mapPos[0] + mapSize[0] + spacing + buffer, max( mapSize[1], legendSize[1] ) + spacing + buffer )
+    settingsMenuPos = ( mapPos[0] + mapSize[0] + spacing * 2, 0 )
+
+    settingsMenuSize, widgets, widgetCallbacks = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, True )
+        
+    screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( mapSize[1], legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
     screen = pygame.display.set_mode( screenSize )
     
     woodland = Woodland( mapPos, mapSize, minClearingDist )
     woodland.generate( numClearings )
     
-    woodland.draw( screen )
-    drawAntiRect( screen, woodland.rect, WHITE )
-    legendSize = drawLegend( screen, (0, 0), spacing )
-    
     running = True
-    pygame.display.update()
     
     while running:
         # Main event updates
-        ev = pygame.event.get()
+        events = pygame.event.get()
 
-        for event in ev:
+        for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     debug_clear()
-                    woodland.generate( numClearings )
+                    
+                    woodland = Woodland( mapPos, [ configData.mapWidth, configData.mapHeight ], configData.minClearingDist,
+                                         configData.enableLake, configData.enableRiver, configData.forceLake, configData.forceRiver,
+                                         configData.enableMarquisate, configData.enableEyrie, configData.enableWoodlandAlliance,
+                                         configData.enableLizardCult, configData.enableRiverfolk, configData.enableDuchy,
+                                         configData.enableCorvids )
+                    woodland.generate( configData.numClearings )
+
+                    settingsMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )
+                    settingsMenuSize, widgets, widgetCallbacks = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, True )
+        
+                    screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( mapSize[1], legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
+                    screen = pygame.display.set_mode( screenSize )
+                
                 elif event.key == pygame.K_d:
                     debug_dump()
                 elif event.key == pygame.K_u:
@@ -144,6 +405,16 @@ def main():
         woodland.draw( screen )
         drawAntiRect( screen, woodland.rect, WHITE )
         legendSize = drawLegend( screen, (0, 0), spacing )
+        settingsMenuSize, _, _ = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, False )
+
+        # Update widgets
+        pygame_widgets.update( events )
+        for widgetIndex in range( len( widgets ) ):
+            widgets[widgetIndex].draw()
+
+            # Set our config data
+            if widgetCallbacks[widgetIndex]:
+                widgetCallbacks[widgetIndex]( configData, widgets[widgetIndex] )
         
         # If we're close enough to any clearings draw the local info
         mousePos = pygame.mouse.get_pos()
@@ -160,7 +431,7 @@ def main():
         if closestClearing:
             infoDrawPos = [ mousePos[0] + 10, mousePos[1] ]
             closestClearing.drawLocalInfo( screen, infoDrawPos )
-
+        
         # Update display
         pygame.display.update()
 

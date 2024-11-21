@@ -381,7 +381,7 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
 
         maxWidth = max( maxWidth, textSize[0] + toggleWidth * 2 + spacing * 4 )
     
-    return ( [ maxWidth, commonPos[1] + yOffset ], widgets, widgetCallbacks )
+    return ( [ maxWidth, otherVarsPos[1] + yOffset ], widgets, widgetCallbacks )
 
   
 def main():

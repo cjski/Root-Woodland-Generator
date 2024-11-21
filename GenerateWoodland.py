@@ -85,7 +85,10 @@ class ConfigData:
 
     def setEnableCorvids( config, widget ):
         config.enableCorvids = widget.getValue()
-    
+
+# Global Data settings functions
+def setUseClassicGraphics( config, widget ):
+    GLOBAL_SETTINGS.useClassicGraphics = widget.getValue()
         
 def drawLegend( screen, pos, spacing ):
     # First draw the factions legend
@@ -164,6 +167,11 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
     maxWidth = 0
     widgets = []
     widgetCallbacks = []
+
+    textBoxHeightBuffer = 10
+    textBoxHalfHeightBuffer = textBoxHeightBuffer / 2
+    toggleExtraSpacing = 10
+    toggleHalfExtraSpacing = int( toggleExtraSpacing / 2 )
     
     # Draw the title
     titlePos = pos
@@ -191,8 +199,6 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
     commonVarsStartVals = [ str( configData.mapWidth ), str( configData.mapHeight ), str( configData.numClearings ), str( configData.minClearingDist ) ]
     commonVarsFont = basicFont14
     yOffset = 0
-    textBoxHeightBuffer = 10
-    textBoxHalfHeightBuffer = textBoxHeightBuffer / 2
 
     for i in range( len( commonVarsTexts ) ):
         text = commonVarsTexts[i]
@@ -248,8 +254,6 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
     factionVarsPos = [ factionsPos[0], factionsPos[1] + factionsTextSize[1] + spacing ]
     factionVarsFont = basicFont14
     yOffset = 0
-    toggleExtraSpacing = 10
-    toggleHalfExtraSpacing = int( toggleExtraSpacing / 2 )
     
     for i in range( len( factionNames ) ):
         text = factionNames[i]
@@ -326,6 +330,44 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
 
         maxWidth = max( maxWidth, textSize[0] + toggleWidth * 2 + spacing * 4 )
 
+    # Other Settings
+    otherPos = [ mapGenVarsPos[0], mapGenVarsPos[1] + yOffset + spacing ]
+    otherFont = font14
+    otherText = "Other"
+
+    otherSize = otherFont.size( otherText )
+    drawText( screen, otherPos, otherText, otherFont, BLACK )
+
+    maxWidth = max( maxWidth, otherSize[0] )
+
+    otherVarNames = [ "Use Classic Graphics" ]
+    otherCallbacks = [ setUseClassicGraphics ]
+    otherVarStartValues = [ GLOBAL_SETTINGS.useClassicGraphics ]
+    otherVarsPos = [ otherPos[0], otherPos[1] + otherSize[1] + spacing ]
+    otherVarsFont = basicFont14
+    yOffset = 0
+    
+    for i in range( len( otherVarNames ) ):
+        text = otherVarNames[i]
+        textSize = otherVarsFont.size( text )
+
+        toggleX = otherVarsPos[0] + 2 * spacing
+        toggleY = otherVarsPos[1] + yOffset + toggleHalfExtraSpacing
+        toggleWidth = textSize[1]
+        toggleHeight = textSize[1]
+
+        if createWidgets:
+            toggle = Toggle( screen, toggleX, toggleY, toggleWidth, toggleHeight, startOn=otherVarStartValues[i] )
+            widgets.append( toggle )
+            widgetCallbacks.append( otherCallbacks[i] )
+
+        textPos = [ toggleX + toggleWidth * 2 + spacing, toggleY ]
+        drawText( screen, textPos, text, otherVarsFont, BLACK )
+
+        yOffset += spacing + toggleHeight + toggleHalfExtraSpacing * 2
+
+        maxWidth = max( maxWidth, textSize[0] + toggleWidth * 2 + spacing * 4 )
+    
     return ( [ maxWidth, commonPos[1] + yOffset ], widgets, widgetCallbacks )
 
   

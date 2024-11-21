@@ -3,6 +3,16 @@ import random
 import math
 import numpy as np
 
+
+"""
+GLOBAL SETTINGS ALL FILES NEED TO SEE
+"""
+class GlobalSettings:
+    def __init__( self ):
+        self.useClassicGraphics = True
+
+GLOBAL_SETTINGS = GlobalSettings()
+
 """
 FONTS
 """
@@ -55,6 +65,18 @@ controlColours = {
     "Corvid Conspiracy": GREY,
     "Denizens": YELLOW,
     }
+
+"""
+IMAGES
+"""
+
+MARQUISATE_ICON_PATH = "Images/marquisateIcon.png"
+EYRIE_ICON_PATH = "Images/eyrieIcon.png"
+WOODLAND_ALLIANCE_ICON_PATH = "Images/woodlandAllianceIcon.png"
+LIZARD_CULT_ICON_PATH = "Images/lizardCultIcon.png"
+RIVERFOLK_ICON_PATH = "Images/riverfolkIcon.png"
+DUCHY_ICON_PATH = "Images/duchyIcon.png"
+CORVIDS_ICON_PATH = "Images/corvidsIcon.png"
 
 """
 HELPER FUNCTIONS
@@ -145,3 +167,22 @@ def drawAntiRect( screen, rect, colour ):
 
     for rect in bgRects:
         pygame.draw.rect( screen, colour, rect )
+
+# Scale the image to match the size and return the scaled copy
+# We will scale the larger side of the image to the size to keep it within the confines of whatever it's being drawn in
+def getScaledImage( imagePath, size ):
+    image = pygame.image.load( imagePath )
+    imageSize = image.get_size()
+
+    newSize = [ 0, 0 ]
+    if imageSize[0] > imageSize[1]:
+        newSize[0] = size
+        newSize[1] = int( size * float( imageSize[1] ) / imageSize[0] )
+    else:
+        newSize[0] = int( size * float( imageSize[0] ) / imageSize[1] )
+        newSize[1] = size
+
+    image = pygame.transform.scale( image, newSize )
+    return image
+    
+    

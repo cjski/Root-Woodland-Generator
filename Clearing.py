@@ -63,13 +63,17 @@ class Clearing:
 
     @staticmethod
     def drawWoodlandAllianceSupport( screen, org, size ):
-        points = [ [.15, 0], [.3, 0], [.45, .15], [.55, .15], [.7, 0], [.85, 0], [1.0, 0.15], [1.0, .3], [.85, .45], [.85, .7], [.65, .9], [.35, .9], [.15, .7], [.15, .45], [0.0, .3], [.0, .15] ]
-        
-        for i in range( len( points ) ):
-            points[i] = org + size * np.array( points[i] )
+        if GLOBAL_SETTINGS.useClassicGraphics:
+            points = [ [.15, 0], [.3, 0], [.45, .15], [.55, .15], [.7, 0], [.85, 0], [1.0, 0.15], [1.0, .3], [.85, .45], [.85, .7], [.65, .9], [.35, .9], [.15, .7], [.15, .45], [0.0, .3], [.0, .15] ]
+            
+            for i in range( len( points ) ):
+                points[i] = org + size * np.array( points[i] )
 
-        pygame.draw.polygon( screen, controlColours[ "Woodland Alliance" ], points )
-        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+            pygame.draw.polygon( screen, controlColours[ "Woodland Alliance" ], points )
+            pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+        else:
+            image = getScaledImage( WOODLAND_ALLIANCE_ICON_PATH, size )
+            screen.blit( image, org )
 
     @staticmethod
     def drawWoodlandAllianceBase( screen, org, size ):
@@ -83,13 +87,17 @@ class Clearing:
 
     @staticmethod
     def drawLizardCultSupport( screen, org, size ):
-        points = [ [0, 0.1], [0.25, 0], [.6, 0], [1, .15], [1, .45], [.6, .6], [.7, .9], [.15, .9], [.25, .6], [0.0, .5], [.25, .4], [.0, .3], [.25, .2] ]
-        
-        for i in range( len( points ) ):
-            points[i] = org + size * np.array( points[i] )
+        if GLOBAL_SETTINGS.useClassicGraphics:
+            points = [ [0, 0.1], [0.25, 0], [.6, 0], [1, .15], [1, .45], [.6, .6], [.7, .9], [.15, .9], [.25, .6], [0.0, .5], [.25, .4], [.0, .3], [.25, .2] ]
+            
+            for i in range( len( points ) ):
+                points[i] = org + size * np.array( points[i] )
 
-        pygame.draw.polygon( screen, controlColours[ "Lizard Cult" ], points )
-        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+            pygame.draw.polygon( screen, controlColours[ "Lizard Cult" ], points )
+            pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+        else:
+            image = getScaledImage( LIZARD_CULT_ICON_PATH, size )
+            screen.blit( image, org )
 
     @staticmethod
     def drawGarden( screen, org, size ):
@@ -113,13 +121,17 @@ class Clearing:
 
     @staticmethod
     def drawRiverfolk( screen, org, size ):
-        points = [ [.1, 0], [.2, 0], [.3, .1], [.7, .1], [.8, 0], [.9, 0], [1.0, 0.1], [1.0, .2], [.9, .3], [.9, .7], [.7, .9], [.3, .9], [.1, .7], [.1, .3], [0.0, .2], [.0, .1] ]
-        
-        for i in range( len( points ) ):
-            points[i] = org + size * np.array( points[i] )
+        if GLOBAL_SETTINGS.useClassicGraphics:
+            points = [ [.1, 0], [.2, 0], [.3, .1], [.7, .1], [.8, 0], [.9, 0], [1.0, 0.1], [1.0, .2], [.9, .3], [.9, .7], [.7, .9], [.3, .9], [.1, .7], [.1, .3], [0.0, .2], [.0, .1] ]
+            
+            for i in range( len( points ) ):
+                points[i] = org + size * np.array( points[i] )
 
-        pygame.draw.polygon( screen, controlColours[ "Riverfolk" ], points )
-        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+            pygame.draw.polygon( screen, controlColours[ "Riverfolk" ], points )
+            pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+        else:
+            image = getScaledImage( RIVERFOLK_ICON_PATH, size )
+            screen.blit( image, org )
 
     @staticmethod
     def drawTunnel( screen, org, size ):
@@ -133,14 +145,18 @@ class Clearing:
 
     @staticmethod
     def drawCorvidConspiracy( screen, org, size ):
-        points = [ [0.1, 1], [0.2, 0.75], [0, 0.5], [0, 0.25], [0.25, 0], [0.5, 0], [0.75, .25], [1, 0.2], [0.75, 0.375], [1, 0.6], [0.75, 0.5], [0.6, .75], [0.7, 1.0] ]
-        
-        for i in range( len( points ) ):
-            points[i] = org + size * np.array( points[i] )
+        if GLOBAL_SETTINGS.useClassicGraphics:
+            points = [ [0.1, 1], [0.2, 0.75], [0, 0.5], [0, 0.25], [0.25, 0], [0.5, 0], [0.75, .25], [1, 0.2], [0.75, 0.375], [1, 0.6], [0.75, 0.5], [0.6, .75], [0.7, 1.0] ]
+            
+            for i in range( len( points ) ):
+                points[i] = org + size * np.array( points[i] )
 
-        pygame.draw.polygon( screen, controlColours[ "Corvid Conspiracy" ], points )
-        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
-
+            pygame.draw.polygon( screen, controlColours[ "Corvid Conspiracy" ], points )
+            pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+        else:
+            image = getScaledImage( CORVIDS_ICON_PATH, size )
+            screen.blit( image, org )
+            
     @staticmethod
     def drawPlot( screen, org, size ):
         points = [ [0.2, 0.2], [0.4, 0], [.6, 0], [.8, .2], [.8, .8], [.6, 1], [.4, 1], [.2, .8] ]
@@ -214,24 +230,32 @@ class Clearing:
     # Methods for drawing control icons
     @staticmethod
     def drawMarquisateControl( screen, org, size ):
-        points = [ [0, 0], [0.33, 0.25], [.66, .25], [1, 0], [1, .75], [.75, 1], [.25, 1], [0, .75] ]
+        if GLOBAL_SETTINGS.useClassicGraphics:
+            points = [ [0, 0], [0.33, 0.25], [.66, .25], [1, 0], [1, .75], [.75, 1], [.25, 1], [0, .75] ]
+            
+            for i in range( len( points ) ):
+                points[i] = org + size * np.array( points[i] )
+
+            pygame.draw.polygon( screen, controlColours[ "Marquisate" ], points )
+            pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+        else:
+            image = getScaledImage( MARQUISATE_ICON_PATH, size )
+            screen.blit( image, org )
         
-        for i in range( len( points ) ):
-            points[i] = org + size * np.array( points[i] )
-
-        pygame.draw.polygon( screen, controlColours[ "Marquisate" ], points )
-        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
-
     @staticmethod
     def drawEyrieControl( screen, org, size ):
-        points = [ [0, 1], [0.2, 0.8], [0.1, 0.1], [0.5, 0.3], [0.75, 0.3], [1.0, 0.5], [0.75, .7], [0.75, 0.8], [0.95, 1] ]
-        
-        for i in range( len( points ) ):
-            points[i] = org + size * np.array( points[i] )
+        if GLOBAL_SETTINGS.useClassicGraphics:
+            points = [ [0, 1], [0.2, 0.8], [0.1, 0.1], [0.5, 0.3], [0.75, 0.3], [1.0, 0.5], [0.75, .7], [0.75, 0.8], [0.95, 1] ]
+            
+            for i in range( len( points ) ):
+                points[i] = org + size * np.array( points[i] )
 
-        pygame.draw.polygon( screen, controlColours[ "Eyrie" ], points )
-        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
-
+            pygame.draw.polygon( screen, controlColours[ "Eyrie" ], points )
+            pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+        else:
+            image = getScaledImage( EYRIE_ICON_PATH, size )
+            screen.blit( image, org )
+            
     @staticmethod
     def drawWoodlandAllianceControl( screen, org, size ):
         Clearing.drawWoodlandAllianceSupport( screen, org, size )
@@ -246,14 +270,18 @@ class Clearing:
 
     @staticmethod
     def drawGrandDuchyControl( screen, org, size ):
-        points = [ [0, 1], [0, 0.64], [0.09, 0.37], [0.21, 0.19], [0.36, 0.1], [0.6, 0.1], [0.7, .3], [1, 0.3], [.8, .5], [.9, 1] ]
-        
-        for i in range( len( points ) ):
-            points[i] = org + size * np.array( points[i] )
+        if GLOBAL_SETTINGS.useClassicGraphics:
+            points = [ [0, 1], [0, 0.64], [0.09, 0.37], [0.21, 0.19], [0.36, 0.1], [0.6, 0.1], [0.7, .3], [1, 0.3], [.8, .5], [.9, 1] ]
+            
+            for i in range( len( points ) ):
+                points[i] = org + size * np.array( points[i] )
 
-        pygame.draw.polygon( screen, controlColours[ "Grand Duchy" ], points )
-        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
-
+            pygame.draw.polygon( screen, controlColours[ "Grand Duchy" ], points )
+            pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+        else:
+            image = getScaledImage( DUCHY_ICON_PATH, size )
+            screen.blit( image, org )
+            
     @staticmethod
     def drawCorvidControl( screen, org, size ):
         Clearing.drawCorvidConspiracy( screen, org, size )

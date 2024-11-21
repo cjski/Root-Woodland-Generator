@@ -33,6 +33,9 @@ class ConfigData:
         self.enableRiverfolk = True
         self.enableDuchy = True
         self.enableCorvids = True
+        self.enableMountains = True
+        self.enableMarshes = True
+        self.enableLandmarks = True
 
     def getTextBoxAsInt( widget ):
         text = widget.getText()
@@ -85,6 +88,15 @@ class ConfigData:
 
     def setEnableCorvids( config, widget ):
         config.enableCorvids = widget.getValue()
+
+    def setEnableMountains( config, widget ):
+        config.enableMountains = widget.getValue()
+
+    def setEnableMarshes( config, widget ):
+        config.enableMarshes = widget.getValue()
+
+    def setEnableLandmarks( config, widget ):
+        config.enableLandmarks = widget.getValue()
 
 # Global Data settings functions
 def setUseClassicGraphics( config, widget ):
@@ -300,14 +312,15 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
 
     maxWidth = max( maxWidth, mapGenSize[0] )
 
-    mapGenVarNames = [ "Enable Lake", "Force Lake Spawn", "Enable River", "Force River Spawn" ]
-    mapGenCallbacks = [ ConfigData.setEnableLake, ConfigData.setForceLake, ConfigData.setEnableRiver, ConfigData.setForceRiver ]
-    mapGenVarStartValues = [ configData.enableLake, configData.forceLake, configData.enableRiver, configData.forceRiver ]
+    mapGenVarNames = [ "Enable Lake", "Force Lake Spawn", "Enable River", "Force River Spawn",
+                       "Enable Mountains", "Enable Marshes", "Enable Landmarks" ]
+    mapGenCallbacks = [ ConfigData.setEnableLake, ConfigData.setForceLake, ConfigData.setEnableRiver, ConfigData.setForceRiver,
+                        ConfigData.setEnableMountains, ConfigData.setEnableMarshes, ConfigData.setEnableLandmarks ]
+    mapGenVarStartValues = [ configData.enableLake, configData.forceLake, configData.enableRiver, configData.forceRiver,
+                             configData.enableMountains, configData.enableMarshes, configData.enableLandmarks ]
     mapGenVarsPos = [ mapGenPos[0], mapGenPos[1] + mapGenSize[1] + spacing ]
     mapGenVarsFont = basicFont14
     yOffset = 0
-    toggleExtraSpacing = 10
-    toggleHalfExtraSpacing = int( toggleExtraSpacing / 2 )
     
     for i in range( len( mapGenVarNames ) ):
         text = mapGenVarNames[i]
@@ -426,7 +439,8 @@ def main():
                                          configData.enableLake, configData.enableRiver, configData.forceLake, configData.forceRiver,
                                          configData.enableMarquisate, configData.enableEyrie, configData.enableWoodlandAlliance,
                                          configData.enableLizardCult, configData.enableRiverfolk, configData.enableDuchy,
-                                         configData.enableCorvids )
+                                         configData.enableCorvids, configData.enableMountains, configData.enableMarshes,
+                                         configData.enableLandmarks )
                     woodland.generate( configData.numClearings )
 
                     settingsMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )

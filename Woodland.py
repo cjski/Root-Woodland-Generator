@@ -652,7 +652,7 @@ class Woodland:
                     }
 
     def __init__( self, pos, size, minClearingDist, enableLake=True, enableRiver=True, forceLake=False, forceRiver=False, enableMarquisate=True, enableEyrie=True, enableWoodlandAlliance=True,
-                  enableLizardCult=True, enableRiverfolk=True, enableDuchy=True, enableCorvids=True ):
+                  enableLizardCult=True, enableRiverfolk=True, enableDuchy=True, enableCorvids=True, enableMountains=True, enableMarshes=True, enableLandmarks=True ):
         self.pos = pos
         self.size = [ max( size[0], self.minSize ), max( size[1], self.minSize ) ]
         self.minClearingDist = max( 10, minClearingDist )
@@ -719,6 +719,10 @@ class Woodland:
                                  "Grand Duchy"          : self.enableDuchy,
                                  "Corvid Conspiracy"    : self.enableCorvids,
                                  }
+
+        self.enableMountains = enableMountains
+        self.enableMarshes = enableMarshes
+        self.enableLandmarks = enableLandmarks
 
         
     def update( self ):
@@ -1036,7 +1040,7 @@ class Woodland:
             
             # If any of these tri areas is an edge point, then randomly chance it turning into a mountain region
             isEdge = -1 in self.tri.neighbors[dt]
-            if ( isEdge and self.dtTypes[dt] != DTType.LAKE ):
+            if ( self.enableMountains and isEdge and self.dtTypes[dt] != DTType.LAKE ):
                 mountainChance = random.random()
                 if mountainChance < self.mountainChance:
                     self.dtTypes[dt] = DTType.MOUNTAIN
@@ -1048,7 +1052,7 @@ class Woodland:
                                 self.clearings[vertex].addFeature( "Mountain" )
 
             # If we're a forest next to a lake or have a river clearing adjacent then have a chance to be a marsh
-            if ( self.dtTypes[dt] == DTType.FOREST ):
+            if ( self.enableMarshes and self.dtTypes[dt] == DTType.FOREST ):
                 # Are we next to a lake
                 nextToLake = False
                 for neighbor in self.tri.neighbors[dt]:
@@ -1123,6 +1127,9 @@ class Woodland:
 
     def generateLandmarks( self ):
         self.landmarks = []
+
+        if not self.enableLandmarks:
+            return
         
         numLandmarksToSpawn = random.randrange( self.minLandmarks, self.maxLandmarks + 1 )
         numLandmarks = len( LandmarkType )

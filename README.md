@@ -1,6 +1,6 @@
 # Root-Woodland-Generator
 
-![image](https://github.com/user-attachments/assets/9a0cb3b8-ef7b-4c46-b667-eac555b517a6)
+![image](https://github.com/user-attachments/assets/f9038049-614e-4140-9873-8a3848ce92de)
 
 This is a generator for quickly creating random Woodland maps for the Root RPG. The majority of the logic is taken straight from the Root Core Book and Travelers and Outsiders (For the additional factions) with a few tweaks to make the maps look good and more connected. 
 

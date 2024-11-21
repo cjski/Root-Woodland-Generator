@@ -446,7 +446,7 @@ def main():
                     settingsMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )
                     settingsMenuSize, widgets, widgetCallbacks = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, True )
         
-                    screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( mapSize[1], legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
+                    screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( configData.mapHeight, legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
                     screen = pygame.display.set_mode( screenSize )
                 
                 elif event.key == pygame.K_d:

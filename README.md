@@ -47,5 +47,8 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 
 - Outside of those, there are a ton of variables inside the files themselves that you can tweak to make things look the way you want to
 
-![image](https://github.com/user-attachments/assets/cf34c4d5-7c27-4042-96be-6b2b0e5a02c0)
+![image](https://github.com/user-attachments/assets/8509f266-651b-4230-b4d2-51effeeba4d0)
+
+## References
+- Images of the Root Factions are from the Root Board Game and Kyle Ferrin
 

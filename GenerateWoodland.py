@@ -447,7 +447,10 @@ def main():
                     settingsMenuSize, widgets, widgetCallbacks = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, True )
         
                     screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( configData.mapHeight, legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
-                    screen = pygame.display.set_mode( screenSize )
+                    prevScreenSize = screen.get_size()
+
+                    if screenSize[0] != prevScreenSize[0] or screenSize[1] != prevScreenSize[1]:
+                        screen = pygame.display.set_mode( screenSize ) 
                 
                 elif event.key == pygame.K_d:
                     debug_dump()

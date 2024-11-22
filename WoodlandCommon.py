@@ -172,6 +172,7 @@ def drawAntiRect( screen, rect, colour ):
 # We will scale the larger side of the image to the size to keep it within the confines of whatever it's being drawn in
 def getScaledImage( imagePath, size ):
     image = pygame.image.load( imagePath )
+    image.convert_alpha()
     imageSize = image.get_size()
 
     newSize = [ 0, 0 ]

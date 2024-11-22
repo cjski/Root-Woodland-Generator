@@ -456,7 +456,7 @@ def main():
                     debug_dump()
                 elif event.key == pygame.K_u:
                     woodland.update()
-            
+
             if event.type == pygame.QUIT:
                 running = False
 

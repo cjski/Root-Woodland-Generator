@@ -152,7 +152,7 @@ class Woodland:
     @staticmethod
     def marquisateRoll( self ):
         numTotal = 0
-
+        
         for clearing in self.clearings:
             if clearing.control == "Marquisate":
                 numTotal += 1
@@ -163,7 +163,9 @@ class Woodland:
             if clearing.hasFeature( "Recruiter" ):
                 numTotal += 1
 
-        if numTotal > 2: # 4
+        # Originally 4, scaled down
+        numFeaturesForBonus = self.scaleByExpectedClearings( 2 )
+        if numTotal > numFeaturesForBonus:
             return 1
         else:
             return 0
@@ -180,7 +182,11 @@ class Woodland:
             if clearing.hasFeature( "Roost" ):
                 numRoosts += 1
 
-        if numRoosts > 0 or numClearings > 2: # 1 roost, 3 clearing
+        # Originally 1
+        numRoostsForBonus = self.scaleByExpectedClearings( 0 )
+        # Originally 3
+        numClearingsForBonus = self.scaleByExpectedClearings( 2 )
+        if numRoosts > numRoostsForBonus or numClearings > numClearingsForBonus:
             return 1
         else:
             return 0
@@ -196,7 +202,11 @@ class Woodland:
             if clearing.hasFeature( "Woodland Alliance Support" ):
                 numSympathy += 1
 
-        if numBases > 1 or numSympathy > 3: # 0 base 2 sympathy
+        # Originally 0
+        numBasesForBonus = self.scaleByExpectedClearings( 1 )
+        # Originally 2
+        numSympathyForBonus = self.scaleByExpectedClearings( 3 )
+        if numBases > numBasesForBonus or numSympathy > numSympathyForBonus:
             return 1
         else:
             return 0
@@ -209,7 +219,9 @@ class Woodland:
             if clearing.hasFeature( "Garden" ):
                 numGardens += 1
 
-        if numGardens > 1: # 1
+        # Originally 1
+        numGardensForBonus = self.scaleByExpectedClearings( 1 )
+        if numGardens > numGardensForBonus:
             return 1
         else:
             return 0
@@ -222,7 +234,9 @@ class Woodland:
             if clearing.hasFeature( "Riverfolk" ):
                 numPosts += 1
 
-        if numPosts > 3: # 2
+        # Originally 2
+        numPostsForBonus = self.scaleByExpectedClearings( 3 )
+        if numPosts > numPostsForBonus:
             return 1
         else:
             return 0
@@ -241,8 +255,14 @@ class Woodland:
                 numMarkets += 1
             if clearing.hasFeature( "Citadel" ):
                 numCitadels += 1
-
-        if numClearings > 0 and numMarkets > 0 and numCitadels > 0: # 1 clearing, 0 market, 0 citadel
+                
+        # Originally 1
+        numClearingsForBonus = self.scaleByExpectedClearings( 1 )
+        # Originally 0
+        numMarketsForBonus = self.scaleByExpectedClearings( 0 )
+        # Originally 0
+        numCitadelsForBonus = self.scaleByExpectedClearings( 0 )
+        if numClearings > numClearingsForBonus and numMarkets > numMarketsForBonus and numCitadels > numCitadelsForBonus:
             return 1
         else:
             return 0
@@ -255,7 +275,9 @@ class Woodland:
             if clearing.control == "Corvid Conspiracy":
                 numPlots += 1
 
-        if numPlots > 4: # 2
+        # Originally 2
+        numPlotsForBonus = self.scaleByExpectedClearings( 3 )
+        if numPlots > numPlotsForBonus:
             return 1
         else:
             return 0
@@ -299,33 +321,36 @@ class Woodland:
 
         if len( canAttack ) == 0:
             return
-        
-        toAttack = random.sample( canAttack, 1 )[0]
 
-        toAttack.increaseWarStatusBy( 1 )
-        
-        if toAttack.hasFeature( "Fortifications" ):
-            toAttack.removeFeature( "Fortifications" )
-            return
-        
-        blockingFeatures = [ "Roost", "Base", "Stronghold", "Workshop", "Sawmill", "Recruiter", "Citadel", "Market" ]
-        hasBlocking = False
-        for blocking in blockingFeatures:
-            if toAttack.hasFeature( blocking ):
-                toAttack.removeFeature( blocking )
-                hasBlocking = True
+        numToAttack = self.scaleByExpectedClearings( 1 )
+        numToAttack = int( min( numToAttack, len( canAttack ) ) )
+        toAttackClearings = random.sample( canAttack, numToAttack )
 
-        if not hasBlocking:
-            # Clear out the previous plots and trade posts that aren't blocking features
-            if toAttack.control in self.possibleBuildingLosses:
-                for building in self.possibleBuildingLosses[ toAttack.control ]:
-                    toAttack.removeFeature( building )
-            toAttack.control = faction
-            if faction == "Marquisate" and numControlled == 0:
-                toAttack.addFeature( "Stronghold" )
+        for toAttack in toAttackClearings:
+            toAttack.increaseWarStatusBy( 1 )
+            
+            if toAttack.hasFeature( "Fortifications" ):
+                toAttack.removeFeature( "Fortifications" )
+                return
+            
+            blockingFeatures = [ "Roost", "Base", "Stronghold", "Workshop", "Sawmill", "Recruiter", "Citadel", "Market" ]
+            hasBlocking = False
+            for blocking in blockingFeatures:
+                if toAttack.hasFeature( blocking ):
+                    toAttack.removeFeature( blocking )
+                    hasBlocking = True
 
-            if faction == "Eyrie" and numControlled == 0:
-                toAttack.addFeature( "Roost" )
+            if not hasBlocking:
+                # Clear out the previous plots and trade posts that aren't blocking features
+                if toAttack.control in self.possibleBuildingLosses:
+                    for building in self.possibleBuildingLosses[ toAttack.control ]:
+                        toAttack.removeFeature( building )
+                toAttack.control = faction
+                if faction == "Marquisate" and numControlled == 0:
+                    toAttack.addFeature( "Stronghold" )
+
+                if faction == "Eyrie" and numControlled == 0:
+                    toAttack.addFeature( "Roost" )
 
     @staticmethod
     def fortify( self, faction ):
@@ -340,12 +365,16 @@ class Woodland:
 
         if len( controlled ) == 0:
             return
-        toFortify = random.sample( controlled, 1 )[0]
+        
+        numToFortify = self.scaleByExpectedClearings( 1, 1 )
+        numToFortify = min( len( controlled ), numToFortify )
+        toFortifyClearings = random.sample( controlled, numToFortify )
 
-        toFortify.addFeature( "Fortifications" )
+        for toFortify in toFortifyClearings:
+            toFortify.addFeature( "Fortifications" )
 
-        if faction == "Marquisate" and not strongholdExists:
-            toFortify.addFeature( "Stronghold" )
+            if faction == "Marquisate" and not strongholdExists:
+                toFortify.addFeature( "Stronghold" )
 
     @staticmethod
     def establishCells( self, faction ):
@@ -355,7 +384,9 @@ class Woodland:
             if clearing.control != faction and not clearing.hasFeature( "Woodland Alliance Support" ):
                 notControlled.append( clearing )
 
-        numAlliance = min( 2, len( notControlled ) )
+        # Originally 2
+        numClearingsToSpreadTo = self.scaleByExpectedClearings( 2, 1 )
+        numAlliance = int( min( numClearingsToSpreadTo, len( notControlled ) ) )
 
         if numAlliance > 0:
             toAlliance = random.sample( notControlled, numAlliance )
@@ -379,14 +410,19 @@ class Woodland:
         
         if len( controlled ) > 0:
             random.shuffle( controlled )
-            
-            toAdd = random.sample( controlled, 1 )[0]
-            if not toAdd.hasFeature( "Sawmill" ):
-                toAdd.addFeature( "Sawmill" )
-            elif not toAdd.hasFeature( "Workshop" ):
-                toAdd.addFeature( "Workshop" )
-            elif not toAdd.hasFeature( "Recruiter" ):
-                toAdd.addFeature( "Recruiter" )
+
+            # Originally 1
+            numToBuild = self.scaleByExpectedClearings( 1, 1 )
+            numToBuild = min( len( controlled ), numToBuild )
+            toAdd = random.sample( controlled, numToBuild )
+
+            for clearing in toAdd:
+                if not clearing.hasFeature( "Sawmill" ):
+                    clearing.addFeature( "Sawmill" )
+                elif not clearing.hasFeature( "Workshop" ):
+                    clearing.addFeature( "Workshop" )
+                elif not clearing.hasFeature( "Recruiter" ):
+                    clearing.addFeature( "Recruiter" )
 
     @staticmethod
     def buildGarden( self, faction ):
@@ -401,12 +437,23 @@ class Woodland:
                 canBuild.append( clearing )
 
         if len( almostBuilt ) > 0:
-            toBuild = random.sample( almostBuilt, 1 )[0]
-            toBuild.addFeature( "Garden" )
-            toBuild.removeFeature( "In Progress Garden" )
+            # Originally 1
+            numToBuild = self.scaleByExpectedClearings( 1, 1 )
+            numToBuild = min( numToBuild, len( almostBuilt ) )
+            toBuild = random.sample( almostBuilt, numToBuild )
+    
+            for clearing in toBuild:
+                clearing.addFeature( "Garden" )
+                clearing.removeFeature( "In Progress Garden" )
+                
         elif len( canBuild ) > 0:
-            toBuild = random.sample( canBuild, 1 )[0]
-            toBuild.addFeature( "In Progress Garden" )
+            # Originally 1
+            numToBuild = self.scaleByExpectedClearings( 1, 1 )
+            numToBuild = min( numToBuild, len( canBuild ) )
+            toBuild = random.sample( canBuild, numToBuild )
+
+            for clearing in toBuild:
+                clearing.addFeature( "In Progress Garden" )
                 
     @staticmethod
     def proselytize( self, faction ):
@@ -416,8 +463,13 @@ class Woodland:
                 canAdd.append( clearing )
 
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
-            toAdd.addFeature( "Lizard Cult" )
+            # Originally 1
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAdd = random.sample( canAdd, numToAdd )
+
+            for clearing in toAdd:
+                clearing.addFeature( "Lizard Cult" )
             
     @staticmethod
     def conductCommerce( self, faction ):
@@ -427,8 +479,13 @@ class Woodland:
                 canAdd.append( clearing )
 
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
-            toAdd.addFeature( "Riverfolk" )
+            # Originally 1
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAdd = random.sample( canAdd, numToAdd )
+
+            for clearing in toAdd:
+                clearing.addFeature( "Riverfolk" )
             
     @staticmethod
     def buildTradingPost( self, faction ):
@@ -438,8 +495,13 @@ class Woodland:
                 canAdd.append( clearing )
 
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
-            toAdd.addFeature( "Trading Post" )
+            # Originally 1
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAdd = random.sample( canAdd, numToAdd )
+
+            for clearing in toAdd:
+                clearing.addFeature( "Trading Post" )
 
     @staticmethod
     def connectTunnel( self, faction ):
@@ -449,8 +511,13 @@ class Woodland:
                 canAdd.append( clearing )
 
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
-            toAdd.addFeature( "Tunnel" )
+            # Originally 1
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAdd = random.sample( canAdd, numToAdd )
+
+            for clearing in toAdd:
+                clearing.addFeature( "Tunnel" )
 
     @staticmethod
     def buildDuchy( self, faction ):
@@ -461,11 +528,16 @@ class Woodland:
                 controlled.append( clearing )
         
         if len( controlled ) > 0:
-            toAdd = random.sample( controlled, 1 )[0]
-            if not toAdd.hasFeature( "Market" ):
-                toAdd.addFeature( "Market" )
-            elif not toAdd.hasFeature( "Citadel" ):
-                toAdd.addFeature( "Citadel" )
+            # Originally 1
+            numToBuild = self.scaleByExpectedClearings( 1, 1 )
+            numToBuild = min( numToBuild, len( controlled ) )
+            toBuild = random.sample( controlled, numToBuild )
+
+            for clearing in toBuild:
+                if not clearing.hasFeature( "Market" ):
+                    clearing.addFeature( "Market" )
+                elif not clearing.hasFeature( "Citadel" ):
+                    clearing.addFeature( "Citadel" )
         
     @staticmethod
     def expandNetwork( self, faction ):
@@ -489,9 +561,13 @@ class Woodland:
 
         if len( canAdd ) == 0:
             return
-        
-        toAdd = random.sample( canAdd, 1 )[0]
-        toAdd.addFeature( "Corvid Conspiracy" )
+
+        numToAdd = self.scaleByExpectedClearings( 1, 1 )
+        numToAdd = min( numToAdd, len( canAdd ) )
+        toAddClearings = random.sample( canAdd, numToAdd )
+
+        for toAdd in toAddClearings:
+            toAdd.addFeature( "Corvid Conspiracy" )
         
     @staticmethod
     def enactPlot( self, faction ):
@@ -501,8 +577,12 @@ class Woodland:
                 controlled.append( clearing )
 
         if len( controlled ) > 0:
-            toAdd = random.sample( controlled, 1 )[0]
-            toAdd.addFeature( "Plot" )
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( controlled ) )
+            toAddClearings = random.sample( controlled, numToAdd )
+
+            for toAdd in toAddClearings:
+                toAdd.addFeature( "Plot" )
                 
     @staticmethod
     def stampPlot( self, faction ):
@@ -539,17 +619,23 @@ class Woodland:
 
         # Either lose control or lose a building
         if chance < self.lossControlChance and len( control ) > 0:
-            toLose = random.sample( control, 1 )[0]
+            numToLose= self.scaleByExpectedClearings( 1, 1 )
+            numToLose = min( numToLose, len( control ) )
+            toLoseClearings = random.sample( control, numToLose )
 
-            toLose.control = "None"
-            toLose.removeFeature( "Fortifications" )
+            for toLose in toLoseClearings:
+                toLose.control = "None"
+                toLose.removeFeature( "Fortifications" )
 
-            for building in self.possibleBuildingLosses[ faction ]:
-                toLose.removeFeature( building )
+                for building in self.possibleBuildingLosses[ faction ]:
+                    toLose.removeFeature( building )
         elif len( buildings ) > 0:
-            toLose = random.sample( buildings, 1 )[0]
-
-            toLose[0].removeFeature( toLose[1] )
+            numToLose = self.scaleByExpectedClearings( 1, 1 )
+            numToLose = min( numToLose, len( buildings ) )
+            toLoseData = random.sample( buildings, numToLose )
+            
+            for toLose in toLoseData:
+                toLose[0].removeFeature( toLose[1] )
 
     # Major boons
     @staticmethod
@@ -560,17 +646,21 @@ class Woodland:
                 canAdd.append( clearing )
 
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
-            toAdd.addFeature( "Base" )
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
 
-            toAdd.removeFeature( "Fortifications" )
+            for toAdd in toAddClearings:
+                toAdd.addFeature( "Base" )
 
-            if toAdd.control in self.possibleBuildingLosses:
-                for building in self.possibleBuildingLosses[ toAdd.control ]:
-                    toAdd.removeFeature( building )
+                toAdd.removeFeature( "Fortifications" )
 
-            toAdd.increaseWarStatusBy( 1 )
-            toAdd.control = "Woodland Alliance"
+                if toAdd.control in self.possibleBuildingLosses:
+                    for building in self.possibleBuildingLosses[ toAdd.control ]:
+                        toAdd.removeFeature( building )
+
+                toAdd.increaseWarStatusBy( 1 )
+                toAdd.control = "Woodland Alliance"
 
     @staticmethod
     def buildRoost( self, faction ):
@@ -580,8 +670,12 @@ class Woodland:
                 canAdd.append( clearing )
 
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
-            toAdd.addFeature( "Roost" )
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
+
+            for toAdd in toAddClearings:
+                toAdd.addFeature( "Roost" )
 
     @staticmethod
     def rapidBuildGarden( self, faction ):
@@ -592,9 +686,13 @@ class Woodland:
                 controlled.append( clearing )
         
         if len( controlled ) > 0:
-            toAdd = random.sample( controlled, 1 )[0]
-            toAdd.addFeature( "Garden" )
-            toAdd.control = "Lizard Cult"
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( controlled ) )
+            toAddClearings = random.sample( controlled, numToAdd )
+
+            for toAdd in toAddClearings:
+                toAdd.addFeature( "Garden" )
+                toAdd.control = "Lizard Cult"
 
     @staticmethod
     def tradeWar( self, faction ):
@@ -605,21 +703,24 @@ class Woodland:
                 canAdd.append( clearing )
         
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
 
-            toAdd.removeFeature( "Fortifications" )
+            for toAdd in toAddClearings:
+                toAdd.removeFeature( "Fortifications" )
 
-            if toAdd.control in self.possibleBuildingLosses:
-                for building in self.possibleBuildingLosses[ toAdd.control ]:
-                    toAdd.removeFeature( building )
+                if toAdd.control in self.possibleBuildingLosses:
+                    for building in self.possibleBuildingLosses[ toAdd.control ]:
+                        toAdd.removeFeature( building )
 
-            toAdd.increaseWarStatusBy( 1 )
-            toAdd.control = "Riverfolk"
+                toAdd.increaseWarStatusBy( 1 )
+                toAdd.control = "Riverfolk"
 
-            for adjacent in toAdd.connected:
-                if not adjacent.hasFeature( "Trading Post" ):
-                    adjacent.addFeature( "Trading Post" )
-                    break
+                for adjacent in toAdd.connected:
+                    if not adjacent.hasFeature( "Trading Post" ):
+                        adjacent.addFeature( "Trading Post" )
+                        break
 
     @staticmethod
     def culminatePlot( self, faction ):
@@ -630,16 +731,19 @@ class Woodland:
                 canAdd.append( clearing )
         
         if len( canAdd ) > 0:
-            toAdd = random.sample( canAdd, 1 )[0]
-        
-            toAdd.removeFeature( "Fortifications" )
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
 
-            if toAdd.control in self.possibleBuildingLosses:
-                for building in self.possibleBuildingLosses[ toAdd.control ]:
-                    toAdd.removeFeature( building )
+            for toAdd in toAddClearings:
+                toAdd.removeFeature( "Fortifications" )
 
-            toAdd.increaseWarStatusBy( 1 )
-            toAdd.control = "Corvid Conspiracy"
+                if toAdd.control in self.possibleBuildingLosses:
+                    for building in self.possibleBuildingLosses[ toAdd.control ]:
+                        toAdd.removeFeature( building )
+
+                toAdd.increaseWarStatusBy( 1 )
+                toAdd.control = "Corvid Conspiracy"
                 
     # minor, major, loss
     controlFcns = { "Marquisate":           [marquisateRoll,    [attack, fortify, stampCells, buildIndustry, stampPlot, evictTraders],              [],                 [lossUpdate, None]],
@@ -805,6 +909,10 @@ class Woodland:
         for control in self.controlCountingData:
             print( control + " ave roll " + str( np.average( self.controlCountingData[control][2] ) ) )
         print( " ---------- " + str(nc))
+
+    def scaleByExpectedClearings( self, num, minVal=0 ):
+        val = num * len( self.clearings ) / self.expectedClearings
+        return int( max( minVal, val ) )
 
     def clearData( self ):
         self.tri = None
@@ -1427,19 +1535,29 @@ class Woodland:
     def calcCorners( self ):
         # Weigh the edges based on distance from center in each direction to get the corner
         # BR, BL, TR, TL
-        self.corners = [self.clearings[0] for i in range(4)]
-        bestCornerScores = [0 for i in range(4)]
+        self.corners = [ None for i in range(4) ]
+        bestCornerScores = [ - self.size[0] - self.size[1] for i in range(4) ]
+        cornerScores = [ [ 0 for i in range(4) ] for j in range( len( self.clearings ) ) ]
         center = ( self.left +  0.5 * self.size[0], self.bottom + 0.5 * self.size[1] )
-        for clearing in self.clearings:
-            cornerScores = [(center[0] - clearing.pos[0]) + (center[1] - clearing.pos[1]),
-                (clearing.pos[0] - center[0]) + (center[1] - clearing.pos[1]),
-                (center[0] - clearing.pos[0]) + (clearing.pos[1] - center[1]),
-                (clearing.pos[0] - center[0]) + (clearing.pos[1] - center[1])]
-
-            for c in range(len(self.corners)):
-                if cornerScores[c] > bestCornerScores[c]:
-                    bestCornerScores[c] = cornerScores[c]
-                    self.corners[c] = clearing
+        
+        for i in range( len( self.clearings ) ):
+            clearing = self.clearings[i]
+            cornerScores[i][0] = (center[0] - clearing.pos[0]) + (center[1] - clearing.pos[1])
+            cornerScores[i][1] = (clearing.pos[0] - center[0]) + (center[1] - clearing.pos[1])
+            cornerScores[i][2] = (center[0] - clearing.pos[0]) + (clearing.pos[1] - center[1])
+            cornerScores[i][3] = (clearing.pos[0] - center[0]) + (clearing.pos[1] - center[1])
+        
+        for c in range( len( self.corners ) ):
+            bestCornerIndex = 0
+            for i in range( len( self.clearings ) ):
+                if cornerScores[i][c] >= bestCornerScores[c]:
+                    bestCornerScores[c] = cornerScores[i][c]
+                    self.corners[c] = self.clearings[i]
+                    bestCornerIndex = i
+            # Prevent clearings from being selected as the best for two different corners
+            for other_c in range( len( self.corners ) ):
+                if other_c != c:
+                    cornerScores[bestCornerIndex][other_c] = - self.size[0] - self.size[1]
 
     def generateLake( self ):
         lakeTris = [ random.randint( 0, len( self.tri.simplices ) - 1 ) ]
@@ -1449,7 +1567,7 @@ class Woodland:
         numClearings = len( self.clearings )
         
         minLakeClearings = Water.minLakeClearings
-        maxLakeClearings = Water.maxLakeClearings * numClearings / self.expectedClearings
+        maxLakeClearings = self.scaleByExpectedClearings( Water.maxLakeClearings, Water.minLakeClearings )
         
         numClearings = len( self.clearings )
         lakeClearings = []
@@ -1551,7 +1669,7 @@ class Woodland:
             if ( chance > Water.lakeEdgeAddChance ):
                 return False
 
-        maxDestroyablePaths = Water.maxDestroyablePaths * numClearings / self.expectedClearings
+        maxDestroyablePaths = self.scaleByExpectedClearings( Water.maxDestroyablePaths )
         
         if ( len( pathsToDestroy ) + len( destroyedPathPoints ) <= maxDestroyablePaths and len( lakeClearingsToAdd ) + len( lakeClearings ) <= currMaxClearings ):
             for i in range(numClearings):
@@ -1966,11 +2084,17 @@ class Woodland:
         # Sort clearings and take the best 4
         clearingIndexes.sort( key=lambda x: riverfolkScores[x], reverse=True )
 
-        for i in range( self.nRiverfolkPresences ):
+        numRiverfolk = self.scaleByExpectedClearings( self.nRiverfolkPresences, 1 )
+        for i in range( numRiverfolk ):
             clearing = self.clearings[ clearingIndexes[i] ]
             clearing.addFeature( "Riverfolk" )
 
     def generateGrandDuchyControl( self, corner ):
+        # Clear out the old stuff in the clearing we're taking over
+        if corner.control in self.possibleBuildingLosses:
+            for building in self.possibleBuildingLosses[ corner.control ]:
+                corner.removeFeature( building )
+
         corner.control = "Grand Duchy"
         corner.addFeature( "Tunnel" )
 
@@ -1978,17 +2102,25 @@ class Woodland:
             if ( not clearing.hasFeature( "Garden" ) and not clearing.hasFeature( "Stronghold" ) ):
                 roll = rollDie( 6, 2 )
                 if ( roll >= self.duchyControlVal ):
+                    # Clear the old features from the clearing being taken over
+                    if clearing.control in self.possibleBuildingLosses:
+                        for building in self.possibleBuildingLosses[ clearing.control ]:
+                            clearing.removeFeature( building )
                     clearing.control = "Grand Duchy"
 
         nonDuchyClearings = [ clearing for clearing in self.clearings if not clearing.control == "Grand Duchy" ]
 
-        randomClearing = random.sample( nonDuchyClearings, 1 )[0]
+        numTunnels = self.scaleByExpectedClearings( 1, 1 )
+        numTunnels = min( numTunnels, len( nonDuchyClearings ) )
+        randomClearings = random.sample( nonDuchyClearings, numTunnels )
 
-        if randomClearing:
-            randomClearing.addFeature( "Tunnel" )
+        for clearing in randomClearings:
+            clearing.addFeature( "Tunnel" )
 
     def generateCorvidConspiracyControl( self ):
-        corvidClearings = random.sample( self.clearings, 4 )
+        numCorvidClearings = self.scaleByExpectedClearings( 4, 1 )
+        numCorvidClearings = min( numCorvidClearings, len( self.clearings ) )
+        corvidClearings = random.sample( self.clearings, numCorvidClearings )
 
         for clearing in corvidClearings:
             clearing.addFeature( "Corvid Conspiracy" )

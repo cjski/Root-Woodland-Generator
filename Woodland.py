@@ -112,7 +112,8 @@ class Woodland:
     riverMaxOffsetDistance = 100
 
     riverWidthMin = 2
-    riverWidthVariance = 11
+    riverWidthMax = 12
+    riverWidthVariance = 4
 
     # Bridge data
     bridgeHalfWidth = 5
@@ -1878,6 +1879,8 @@ class Woodland:
 
         numRiverSplinePoints = len( self.riverSplinePoints )
         self.riverHullPoints = [(0,0) for _ in range( 2 * numRiverSplinePoints )]
+        prevRiverLeftWidth = self.riverWidthMin + ( self.riverWidthMax - self.riverWidthMin ) / 2
+        prevRiverRightWidth = prevRiverLeftWidth
                         
         for riverIndex in range( numRiverSplinePoints ):
             # For each pair of river points, calculate the forward and space it outwards in both directions
@@ -1894,8 +1897,14 @@ class Woodland:
             left = np.array([ -fwd[1], fwd[0] ])
             right = np.array([ fwd[1], -fwd[0] ])
 
-            leftRiverPoint = riverPoint + ( self.riverWidthMin + self.riverWidthVariance * random.random() ) * left
-            rightRiverPoint = riverPoint + ( self.riverWidthMin + self.riverWidthVariance * random.random() ) * right
+            leftWidth = prevRiverLeftWidth + np.random.normal() * self.riverWidthVariance
+            rightWidth = prevRiverRightWidth + np.random.normal() * self.riverWidthVariance
+
+            leftWidth = min( max( self.riverWidthMin, leftWidth ), self.riverWidthMax )
+            rightWidth = min( max( self.riverWidthMin, rightWidth ), self.riverWidthMax )
+            
+            leftRiverPoint = riverPoint + leftWidth * left
+            rightRiverPoint = riverPoint + rightWidth * right
 
             self.riverHullPoints[riverIndex] = leftRiverPoint
             self.riverHullPoints[-(riverIndex+1)] = rightRiverPoint

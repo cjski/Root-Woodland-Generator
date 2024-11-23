@@ -217,7 +217,7 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
         textSize = commonVarsFont.size( text )
         textBoxX = commonVarsPos[0]
         textBoxY = commonVarsPos[1] + yOffset
-        textBoxWidth = 60
+        textBoxWidth = 40
         textBoxHeight = textSize[1] + textBoxHeightBuffer
         
         if createWidgets:

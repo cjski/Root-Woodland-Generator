@@ -29,6 +29,9 @@ class Woodland:
     clearingBufferPercentage = 0.1
     # Size in pixels of the grid cells used in clearing placement
     gridSize = 10
+    # Size in pizels of the cells used for drawing
+    drawGridCellSize = 4
+    drawGridWaterCellsBuffer = 2
     
     pathsTable = [0,0,2,2,3,3,3,4,4,4,5,5,6] #[0,0,1,2,2,3,3,3,3,3,4,4,5] Adding  better weights to the paths here
     residentsTable = ["Rabbit","Mouse","Fox"]
@@ -791,6 +794,10 @@ class Woodland:
         self.riverHullPoints = []
         self.bridges = []
         self.allNames = {}
+        
+        self.drawGridSize = [ int( self.size[0] / self.drawGridCellSize ) + 1, int( self.size[1] / self.drawGridCellSize ) + 1 ]
+        self.drawGridOpenCells = [ [ True for _ in range( self.drawGridSize[1] ) ] for _ in range( self.drawGridSize[0] ) ]
+        self.drawGridData = [ [] for _ in range( self.drawGridSize[1] ) ]
 
         self.controlCountingData = { "Marquisate": [[], [], []],
                     "Eyrie": [[], [], []],
@@ -951,7 +958,8 @@ class Woodland:
         
         self.calcCorners()
         self.generateWoodlandControl()
-        
+
+        self.generateDrawGrid()
         self.generateDecorData()
 
         self.generateLandmarks()
@@ -1074,6 +1082,7 @@ class Woodland:
                 self.allNames[name] = False
 
         allNames = {}
+        
     def generatePointsInTri( self, a, b, c, n ):
         # These vectors define the plane the points can be in, with randomly choosing a as the origin
         ba = b - a
@@ -1091,9 +1100,85 @@ class Woodland:
                 u2 = 1 - u2
 
             p = a + u1*ba + u2*ca
-            points.append(p)
 
-        return points       
+            i, j = self.getDrawGridIndexes( p[0], p[1] )
+            
+            # if we aren't drawing on top of a bad place
+            if self.drawGridOpenCells[i][j]:
+                points.append(p)
+
+        return points
+
+
+    def getDrawGridIndexes( self, x, y ):
+        i = int( min( self.drawGridSize[0] - 1, max( 0, ( x - self.pos[0] ) / self.drawGridCellSize ) ) )
+        j = int( min( self.drawGridSize[1] - 1, max( 0, ( y - self.pos[1] ) / self.drawGridCellSize ) ) )
+        return i, j
+
+    def floodFillDrawGrid( self, i, j ):
+        toFill = [ [i, j] ]
+
+        while len( toFill ) > 0:
+            point = toFill[-1]
+            toFill.pop()
+            
+            if point[0] < 0 or point[0] >= self.drawGridSize[0] or point[1] < 0 or point[1] >= self.drawGridSize[1]:
+                continue
+            if not self.drawGridOpenCells[point[0]][point[1]]:
+                continue
+            
+            self.drawGridOpenCells[point[0]][point[1]] = False
+            toFill.append( [ point[0] - 1, point[1] ] )
+            toFill.append( [ point[0] + 1, point[1] ] )
+            toFill.append( [ point[0], point[1] - 1 ] )
+            toFill.append( [ point[0], point[1] + 1 ] )
+            
+
+    def generateDrawGrid( self ):
+        self.drawGridOpenCells = [ [ True for _ in range( self.drawGridSize[1] ) ] for _ in range( self.drawGridSize[0] ) ]
+
+        fillPoints = []
+        fillPoints.extend( self.riverSplinePoints )
+        if self.water:
+            fillPoints.extend( self.water.hull )
+            
+        # Prevent us from drawing on top of water
+        for point in fillPoints:
+            i, j = self.getDrawGridIndexes( point[0], point[1] )
+
+            minX = int( max( 0, i - self.drawGridWaterCellsBuffer ) )
+            maxX = int( min( self.drawGridSize[0], i + self.drawGridWaterCellsBuffer + 1 ) )
+            minY = int( max( 0, j - self.drawGridWaterCellsBuffer ) )
+            maxY = int( min( self.drawGridSize[1], j + self.drawGridWaterCellsBuffer + 1 ) )
+
+            bufferDistSq = self.drawGridWaterCellsBuffer * self.drawGridWaterCellsBuffer
+
+            for x in range( minX, maxX ):
+                for y in range( minY, maxY ):
+                    if distSq( np.array([i, j]), np.array([x, y]) ) <= bufferDistSq:
+                        self.drawGridOpenCells[x][y] = False
+
+        # Fill in the lake if it exists
+        for triIndex in self.water.triangles:
+            centroid = np.array([0.0, 0.0])
+            dt = self.tri.simplices[triIndex]
+            for pointIndex in dt:
+                centroid += self.tri.points[pointIndex]
+
+            centroid /= 3
+            
+            i, j = self.getDrawGridIndexes( centroid[0], centroid[1] )
+            # If this point is already filled in, it's probably on the edge and we don't want to fill it in
+            if self.drawGridOpenCells[i][j]:
+                self.floodFillDrawGrid( i, j )
+
+
+    def debugDrawDrawGrid( self, screen ):
+        for i in range( self.drawGridSize[0] ):
+            for j in range( self.drawGridSize[1] ):
+                if not self.drawGridOpenCells[i][j]:
+                    pygame.draw.rect( screen, RED, [ self.pos[0] + i * self.drawGridCellSize, self.pos[1] + j * self.drawGridCellSize, self.drawGridCellSize, self.drawGridCellSize ] )
+                            
         
     def generateDecorData( self ):
         numClearings = len(self.clearings)
@@ -1143,6 +1228,7 @@ class Woodland:
                 pointOffsetLen = np.linalg.norm( pointOffset )
                 if pointOffsetLen > 0:
                     pointOffest = pointOffset / pointOffsetLen
+
                 points[i] = points[i] + pointOffset * self.decorFromClearingBuffer
     
             self.decorPointsForDts[dt] = self.generatePointsInTri( points[0], points[1], points[2], numDecorPoints )

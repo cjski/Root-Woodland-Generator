@@ -75,7 +75,7 @@ class Woodland:
     # Decor data
     decorMaxArea = 50000.0
     decorMinArea = 1.0
-    decorMaxPointsPerDt = 250
+    decorMaxPointsPerDt = 175
     decorMinPointsPerDt = 1
     mountainChance = 0.4
     marshChance = 0.5
@@ -83,19 +83,19 @@ class Woodland:
     maxDecorDistToWater = 10
     maxDecorDistToWaterSq = maxDecorDistToWater * maxDecorDistToWater
 
-    decorMountainPercentage = 0.2
+    decorMountainPercentage = 0.4
     decorLakePercentage = 0.05
     decorForestPercentage = 1.0
     decorMarshPercentage = 0.8
 
-    treeMaxSize = 10
-    treeMinSize = 3
+    treeMaxSize = 13
+    treeMinSize = 5
 
-    mountainMaxSize = 25
+    mountainMaxSize = 30
     mountainMinSize = 15
 
-    marshTreeMaxSize = 10
-    marshTreeMinSize = 5
+    marshTreeMaxSize = 15
+    marshTreeMinSize = 7
 
     waveMaxSize = 5
     waveMinSize = 5

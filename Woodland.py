@@ -27,10 +27,10 @@ class Woodland:
     expectedClearings = 12
     # Clearings won't be spawned outside of this space along the edge of the map
     clearingBufferPercentage = 0.1
-    # Size of the grid cells used in clearing placement
+    # Size in pixels of the grid cells used in clearing placement
     gridSize = 10
     
-    pathsTable = [0,0,2,2,3,3,3,3,4,4,4,5,5] #[0,0,1,2,2,3,3,3,3,3,4,4,5] Adding  better weights to the paths here
+    pathsTable = [0,0,2,2,3,3,3,4,4,4,5,5,6] #[0,0,1,2,2,3,3,3,3,3,4,4,5] Adding  better weights to the paths here
     residentsTable = ["Rabbit","Mouse","Fox"]
     
     basicNames      = ["Patchwood", "Underleaf", "Pinehorn", "Sundell", "Rooston", "Milltown", "Oakenhold", "Limberly",

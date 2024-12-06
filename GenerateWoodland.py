@@ -425,6 +425,7 @@ def main():
     woodland.generate( numClearings )
     
     running = True
+    clock = pygame.time.Clock()
     
     while running:
         # Main event updates
@@ -493,6 +494,8 @@ def main():
         
         # Update display
         pygame.display.update()
+
+        clock.tick(60)
 
     pygame.quit()
 

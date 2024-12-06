@@ -83,29 +83,74 @@ class Woodland:
     maxDecorDistToWater = 10
     maxDecorDistToWaterSq = maxDecorDistToWater * maxDecorDistToWater
 
-    decorMountainPercentage = 0.4
-    decorLakePercentage = 0.05
+    decorMountainPercentage = 0.7
+    decorLakePercentage = 0.0
     decorForestPercentage = 1.0
     decorMarshPercentage = 0.8
 
-    treeMaxSize = 13
-    treeMinSize = 5
+    treeMaxSize = 26
+    treeMinSize = 10
 
-    mountainMaxSize = 30
-    mountainMinSize = 15
+    pineMaxSize = 30
+    pineMinSize = 23
 
-    marshTreeMaxSize = 15
-    marshTreeMinSize = 7
+    mountainMaxSize = 60
+    mountainMinSize = 34
+    mountainSnowCapMinSize = 42
+
+    marshTreeMaxSize = 30
+    marshTreeMinSize = 14
 
     waveMaxSize = 5
     waveMinSize = 5
     waveWidth = 1
 
-    snowCapHeight = 0.3
-
     mountainColourVariance = 10
     treeColourVariance = 25
     marshColourVariance = 25
+    pineColourVariance = 15
+
+    class DecorObjectType(Enum):
+        TREE = 0
+        MOUNTAIN = 1
+        PINE = 2
+        
+    # Drawing functions
+    @staticmethod
+    def drawTree( self, screen, pos, size, colour ):
+        pos = [ pos[0], pos[1] - size / 2 ]
+        pygame.draw.circle( screen, colour, pos, size / 2 )
+    
+    @staticmethod
+    def drawMountain( self, screen, pos, size, colour ):
+        pos = np.array( pos )
+        mountainPoints = ( pos + ( 0, - size ), pos + ( - size / 2, 0 ), pos + ( size / 2, 0 ) )
+                        
+        pygame.draw.polygon( screen, colour, mountainPoints )
+        if size >= self.mountainSnowCapMinSize:
+            snowCapHeight = ( size - self.mountainSnowCapMinSize ) / size;
+            snowCapPoints = ( mountainPoints[0], mountainPoints[0] + snowCapHeight * ( mountainPoints[1] - mountainPoints[0] ), mountainPoints[0] + snowCapHeight * ( mountainPoints[2] - mountainPoints[0] ) )
+            pygame.draw.polygon( screen, WHITE, snowCapPoints )
+
+    @staticmethod
+    def drawPine( self, screen, pos, size, colour ):
+        pos = np.array( pos )
+        points = [ [0, -.9], [.15, -.6], [.1, -.6], [.25, -.3], [.2, -.3], [.35, 0], [-.35, 0], [-.2, -.3], [-.25, -.3], [-.1, -.6], [-.15, -.6] ]
+        for i in range( len( points ) ):
+            points[i] = pos + size * np.array( points[i] )
+
+        pygame.draw.polygon( screen, colour, points )
+
+    # For each DTType, we have the draw Functions and the relative weight to draw them ( Ex 3 trees to every 1 pine )
+    dtDrawDataForType = { DTType.FOREST     : ( [ DecorObjectType.TREE, DecorObjectType.PINE ],
+                                                [ 3, 1 ] ),
+                          DTType.LAKE       : ( [],
+                                                [] ),
+                          DTType.MARSH      : ( [ DecorObjectType.TREE ],
+                                                [ 1 ] ),
+                          DTType.MOUNTAIN   : ( [ DecorObjectType.MOUNTAIN, DecorObjectType.PINE ],
+                                                [ 2, 5 ] ),
+    }
 
     # River data
     riverCloseWeight = 0.65
@@ -759,22 +804,6 @@ class Woodland:
                     "Corvid Conspiracy":    [corvidRoll,        [attack, fortify, stampCells, expandNetwork, enactPlot, evictTraders],              [culminatePlot],    [lossUpdate, None]],
                     }
 
-    # Drawing functions
-    @staticmethod
-    def drawTree( self, screen, pos, size, colour ):
-        pos = [ pos[0], pos[1] - size / 2 ]
-        pygame.draw.circle( screen, colour, pos, size )
-    
-    @staticmethod
-    def drawMountain( self, screen, pos, size, colour ):
-        pos = np.array( pos )
-        mountainPoints = ( pos + ( 0, - 2 * size ), pos + ( -size, 0 ), pos + ( size, 0 ) )
-                
-        snowcapPoints = ( mountainPoints[0], mountainPoints[0] + self.snowCapHeight * ( mountainPoints[1] - mountainPoints[0] ), mountainPoints[0] + self.snowCapHeight * ( mountainPoints[2] - mountainPoints[0] ) )
-                
-        pygame.draw.polygon( screen, colour, mountainPoints )
-        pygame.draw.polygon( screen, WHITE, snowcapPoints )
-
     # Initialization
     def __init__( self, pos, size, minClearingDist, enableLake=True, enableRiver=True, forceLake=False, forceRiver=False, enableMarquisate=True, enableEyrie=True, enableWoodlandAlliance=True,
                   enableLizardCult=True, enableRiverfolk=True, enableDuchy=True, enableCorvids=True, enableMountains=True, enableMarshes=True, enableLandmarks=True ):
@@ -1248,56 +1277,64 @@ class Woodland:
                             if vertex < numClearings:
                                 if not self.clearings[vertex].hasFeature( "Marsh" ):
                                     self.clearings[vertex].addFeature( "Marsh" )
-                
-            maxSize = 0
-            minSize = 0
-
-            maxColour = [0, 0, 0]
-            minColour = [0, 0, 0]
+            
 
             numPoints = len( self.decorPointsForDts[dt] )
 
             if self.dtTypes[dt] == DTType.MOUNTAIN:
                 numPoints = min( numPoints, int( numPoints * self.decorMountainPercentage ) )
-                maxSize = self.mountainMaxSize
-                minSize = self.mountainMinSize
-                maxColour = [ min( 255, LIGHT_GREY[0] + self.mountainColourVariance ), min( 255, LIGHT_GREY[1] + self.mountainColourVariance ), min( 255, LIGHT_GREY[2] + self.mountainColourVariance ) ]
-                minColour = [ max( 0, LIGHT_GREY[0] - self.mountainColourVariance ), max( 0, LIGHT_GREY[1] - self.mountainColourVariance ), max( 0, LIGHT_GREY[2] - self.mountainColourVariance ) ]
             elif self.dtTypes[dt] == DTType.FOREST:
                 numPoints = min( numPoints, int( numPoints * self.decorForestPercentage ) )
-                maxSize = self.treeMaxSize
-                minSize = self.treeMinSize
-                maxColour = [ min( 255, DARK_GREEN[0] + self.treeColourVariance ), min( 255, DARK_GREEN[1] + self.treeColourVariance ), min( 255, DARK_GREEN[2] + self.treeColourVariance ) ]
-                minColour = [ max( 0, DARK_GREEN[0] - self.treeColourVariance ), max( 0, DARK_GREEN[1] - self.treeColourVariance ), max( 0, DARK_GREEN[2] - self.treeColourVariance ) ]
             elif self.dtTypes[dt] == DTType.LAKE:
-                maxSize = self.waveMaxSize
-                minSize = self.waveMinSize
+                numPoints = 0
             elif self.dtTypes[dt] == DTType.MARSH:
                 numPoints = min( numPoints, int( numPoints * self.decorMarshPercentage ) )
-                maxSize = self.marshTreeMaxSize
-                minSize = self.marshTreeMinSize
-                maxColour = [ min( 255, MARSH_GREEN[0] + self.marshColourVariance ), min( 255, MARSH_GREEN[1] + self.marshColourVariance ), min( 255, MARSH_GREEN[2] + self.marshColourVariance ) ]
-                minColour = [ max( 0, MARSH_GREEN[0] - self.marshColourVariance ), max( 0, MARSH_GREEN[1] - self.marshColourVariance ), max( 0, MARSH_GREEN[2] - self.marshColourVariance ) ]
-            
-            
-            self.decorSizesForDts[dt] = [ random.randint( minSize, maxSize ) for _ in range( numDecorPoints ) ]
-            self.decorColoursForDts[dt] = [ [ random.randint( minColour[0], maxColour[0] ), random.randint( minColour[1], maxColour[1] ), random.randint( minColour[2], maxColour[2] ) ]
-                                            for _ in range( numDecorPoints ) ]
-            
+
+            if numPoints > 0:
+                # Select the draw functions based on the weights
+                decorObjectTypes = random.choices( self.dtDrawDataForType[ self.dtTypes[dt] ][0], weights=self.dtDrawDataForType[ self.dtTypes[dt] ][1], k=numPoints )
             
             for pointIndex in range( numPoints ):
-                drawFcn = None
-                if self.dtTypes[dt] == DTType.MOUNTAIN:
-                    drawFcn = self.drawMountain
-                elif self.dtTypes[dt] == DTType.FOREST:
-                    drawFcn = self.drawTree
-                elif self.dtTypes[dt] == DTType.MARSH:
-                    drawFcn = self.drawTree
+                decorObjectType = decorObjectTypes[ pointIndex ]
+                point = self.decorPointsForDts[ dt ][ pointIndex ]
 
+                size = 0
+                colour = WHITE
+                colourVariance = 0
+                drawFcn = None
+                
+                if decorObjectType == Woodland.DecorObjectType.TREE:
+                    drawFcn = Woodland.drawTree
+                    # We have a difference between marsh and forest trees
+                    if self.dtTypes[dt] == DTType.MARSH:
+                        size = random.randint( self.marshTreeMinSize, self.marshTreeMaxSize )
+                        colour = MARSH_GREEN
+                        colourVariance = self.marshColourVariance
+                    else:
+                        size = random.randint( self.treeMinSize, self.treeMaxSize )
+                        colour = DARK_GREEN
+                        colourVariance = self.treeColourVariance
+                elif decorObjectType == Woodland.DecorObjectType.PINE:
+                    drawFcn = Woodland.drawPine
+                    size = random.randint( self.pineMinSize, self.pineMaxSize )
+                    colour = DARK_GREEN
+                    colourVariance = self.pineColourVariance
+                elif decorObjectType == Woodland.DecorObjectType.MOUNTAIN:
+                    drawFcn = Woodland.drawMountain
+                    size = random.randint( self.mountainMinSize, self.mountainMaxSize )
+                    colour = LIGHT_GREY
+                    colourVariance = self.mountainColourVariance
+                
+                colour = np.array( colour )
+                # Keep the colour inside the bound of 0 to 255
+                for colourIndex in range( len( colour ) ):
+                    t = random.randint( colour[ colourIndex ] - colourVariance, colour[ colourIndex ] + colourVariance )
+                    t = min( 255, max( t, 0 ) )
+                    colour[ colourIndex ] = t
+                
                 # If theres nothing to draw don't bother adding it
                 if drawFcn:
-                    point = self.decorPointsForDts[dt][pointIndex]
-                    data = [ point[0], self.decorSizesForDts[dt][pointIndex], self.decorColoursForDts[dt][pointIndex], drawFcn ]
+                    data = [ point[0], size, colour, drawFcn ]
                     i, j = self.getDrawGridIndexes( point[0], point[1] )
 
                     self.drawGridData[j].append( data )

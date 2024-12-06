@@ -91,8 +91,8 @@ class Woodland:
     treeMaxSize = 30
     treeMinSize = 23
 
-    pineMaxSize = 30
-    pineMinSize = 23
+    pineMaxSize = 35
+    pineMinSize = 25
 
     bushMaxSize = 15
     bushMinSize = 7
@@ -113,6 +113,10 @@ class Woodland:
     marshColourVariance = 25
     pineColourVariance = 15
     bushColourVariance = 30
+    
+    smallHouseSize = 30
+
+    houseOutlineWidth = 1
 
     class DecorObjectType(Enum):
         TREE = 0
@@ -165,9 +169,26 @@ class Woodland:
         drawPos = [ pos[0], pos[1] - size / 2 ]
         pygame.draw.circle( screen, colour, drawPos, size / 2 )
 
+    @staticmethod
+    def drawSmallHouse( self, screen, pos, size, colour ):
+        basePoints = [ [-.3, .0], [-.3, -.4], [.0, -.7], [.3, -.4], [.3, .0] ]
+        roofPoints = [ [.0, -.7], [.4, -.3], [.45, -.35], [.3, -.5], [.3, -.75], [.15, -.75], [.15, -.65], [0, -.8], [-.45, -.35], [-.4, -.3] ]
+
+        colours = [ GREY, BROWN ]
+        allPoints = [ basePoints, roofPoints ]
+
+        for pointsIndex in range( len( allPoints ) ):
+            points = allPoints[pointsIndex]
+            for i in range( len( points ) ):
+                points[i] = pos + size * np.array( points[i] )
+
+            pygame.draw.polygon( screen, colours[pointsIndex], points )
+            pygame.draw.polygon( screen, BLACK, points, width=self.houseOutlineWidth )
+
+
     # For each DTType, we have the draw Functions and the relative weight to draw them ( Ex 3 trees to every 1 pine )
     dtDrawDataForType = { DTType.FOREST     : ( [ DecorObjectType.TREE, DecorObjectType.PINE, DecorObjectType.BUSH ],
-                                                [ 6, 2, 1 ] ),
+                                                [ 6, 5, 1 ] ),
                           DTType.LAKE       : ( [],
                                                 [] ),
                           DTType.MARSH      : ( [ DecorObjectType.TREE, DecorObjectType.BUSH ],
@@ -1031,6 +1052,7 @@ class Woodland:
 
         self.generateDrawGrid()
         self.generateDecorData()
+        self.generateClearingDecor()
 
         self.generateLandmarks()
         
@@ -1369,18 +1391,36 @@ class Woodland:
                     self.drawGridData[j].append( data )
 
 
-    def cleanDecorPointsNearWater( self, points ):
-        goodPoints = []
-        for point in points:
-            for waterPoint in self.water.hull:
-                canAdd = True
-                if distSq( point, waterPoint ) < self.maxDecorDistToWaterSq:
-                    canAdd = False
-                    break
-            if canAdd:
-                goodPoints.append( point )
-                
-        return goodPoints
+    # Note that this function doesn't return an x, y coordinate in world space, it returns an i, j coordinate in draw grid space because that's what we need later.
+    def getDecorIndexesAroundClearing( self, clearing, n ):
+        allPoints = []
+        cellsFromClearing = int( clearing.rad / self.drawGridCellSize )
+        cellsFromClearingSq = cellsFromClearing * cellsFromClearing
+
+        i, j = self.getDrawGridIndexes( clearing.pos[0], clearing.pos[1] )
+        minX = int( max( 0, i - cellsFromClearing ) )
+        maxX = int( min( self.drawGridSize[0], i + cellsFromClearing + 1 ) )
+        minY = int( max( 0, j - cellsFromClearing ) )
+        maxY = int( min( self.drawGridSize[1], j + cellsFromClearing + 1 ) )
+        
+        for x in range( minX, maxX ):
+            for y in range( minY, maxY ):
+                if self.drawGridOpenCells[x][y] and distSq( np.array([i, j]), np.array([x, y]) ) <= cellsFromClearingSq:
+                    allPoints.append( [x, y] )
+
+        n = min( len( allPoints ), n )
+        
+        decorPoints = random.choices( allPoints, k=n )
+        return decorPoints
+    
+    def generateClearingDecor( self ):
+        for clearing in self.clearings:
+            decorIndexes = self.getDecorIndexesAroundClearing( clearing, 4 )
+            
+            for decorIndex in decorIndexes:
+                x = self.pos[0] + self.drawGridCellSize * decorIndex[0]
+                data = [ x, self.smallHouseSize, WHITE, Woodland.drawSmallHouse ]
+                self.drawGridData[decorIndex[1]].append( data )
 
     def generateLandmarks( self ):
         self.landmarks = []

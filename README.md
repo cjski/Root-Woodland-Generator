@@ -1,6 +1,6 @@
 # Root-Woodland-Generator
 
-![image](https://github.com/user-attachments/assets/f9038049-614e-4140-9873-8a3848ce92de)
+![image](https://github.com/user-attachments/assets/1a21ac5e-a122-4df7-b79e-0a193cc6a80a)
 
 This is a generator for quickly creating random Woodland maps for the Root RPG. The majority of the logic is taken straight from the Root Core Book and Travelers and Outsiders (For the additional factions) with a few tweaks to make the maps look good and more connected. 
 
@@ -13,6 +13,7 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 - Landmark generation for interesting locations outside of the clearings
 - Clearing war status system
 - Customization options
+- Map decoration drawing systems
 
 ## Necessary Modules
 - python

@@ -86,20 +86,23 @@ class Woodland:
     decorMountainPercentage = 0.7
     decorLakePercentage = 0.0
     decorForestPercentage = 1.0
-    decorMarshPercentage = 0.8
+    decorMarshPercentage = 0.9
 
-    treeMaxSize = 26
-    treeMinSize = 10
+    treeMaxSize = 30
+    treeMinSize = 23
 
     pineMaxSize = 30
     pineMinSize = 23
+
+    bushMaxSize = 15
+    bushMinSize = 7
 
     mountainMaxSize = 60
     mountainMinSize = 34
     mountainSnowCapMinSize = 42
 
     marshTreeMaxSize = 30
-    marshTreeMinSize = 14
+    marshTreeMinSize = 23
 
     waveMaxSize = 5
     waveMinSize = 5
@@ -109,17 +112,28 @@ class Woodland:
     treeColourVariance = 25
     marshColourVariance = 25
     pineColourVariance = 15
+    bushColourVariance = 30
 
     class DecorObjectType(Enum):
         TREE = 0
         MOUNTAIN = 1
         PINE = 2
+        BUSH = 3
         
     # Drawing functions
     @staticmethod
     def drawTree( self, screen, pos, size, colour ):
-        pos = [ pos[0], pos[1] - size / 2 ]
-        pygame.draw.circle( screen, colour, pos, size / 2 )
+        trunkPoints = [ [-.2, 0], [-.15, -.05], [-.15, -.7], [.15, -.7], [.15, -.05], [.2, 0] ]
+        for i in range( len( trunkPoints ) ):
+            trunkPoints[i] = pos + size * np.array( trunkPoints[i] )
+
+        pygame.draw.polygon( screen, BROWN, trunkPoints )
+
+        leavesPoints = [ [ pos[0] - 0.25 * size, pos[1] - 0.6 * size ], [ pos[0] + 0.25 * size, pos[1] - 0.6 * size ], [ pos[0], pos[1] - 0.7 * size ] ]
+        leavesSizes = [ size * 0.25, size * 0.25, size * 0.35 ]
+
+        for i in range( len( leavesPoints ) ):
+            pygame.draw.circle( screen, colour, leavesPoints[i], leavesSizes[i] )
     
     @staticmethod
     def drawMountain( self, screen, pos, size, colour ):
@@ -134,20 +148,30 @@ class Woodland:
 
     @staticmethod
     def drawPine( self, screen, pos, size, colour ):
-        pos = np.array( pos )
-        points = [ [0, -.9], [.15, -.6], [.1, -.6], [.25, -.3], [.2, -.3], [.35, 0], [-.35, 0], [-.2, -.3], [-.25, -.3], [-.1, -.6], [-.15, -.6] ]
-        for i in range( len( points ) ):
-            points[i] = pos + size * np.array( points[i] )
+        trunkPoints = [ [-.15, 0], [-.1, -.1], [.1, -.1], [.15, 0] ]
+        for i in range( len( trunkPoints ) ):
+            trunkPoints[i] = pos + size * np.array( trunkPoints[i] )
 
-        pygame.draw.polygon( screen, colour, points )
+        pygame.draw.polygon( screen, DARK_BROWN, trunkPoints )
+        
+        treePoints = [ [0, -1.0], [.2, -.7], [.1, -.7], [.3, -.4], [.2, -.4], [.4, -.1], [-.4, -.1], [-.2, -.4], [-.3, -.4], [-.1, -.7], [-.2, -.7] ]
+        for i in range( len( treePoints ) ):
+            treePoints[i] = pos + size * np.array( treePoints[i] )
+
+        pygame.draw.polygon( screen, colour, treePoints )
+
+    @staticmethod
+    def drawBush( self, screen, pos, size, colour ):
+        drawPos = [ pos[0], pos[1] - size / 2 ]
+        pygame.draw.circle( screen, colour, drawPos, size / 2 )
 
     # For each DTType, we have the draw Functions and the relative weight to draw them ( Ex 3 trees to every 1 pine )
-    dtDrawDataForType = { DTType.FOREST     : ( [ DecorObjectType.TREE, DecorObjectType.PINE ],
-                                                [ 3, 1 ] ),
+    dtDrawDataForType = { DTType.FOREST     : ( [ DecorObjectType.TREE, DecorObjectType.PINE, DecorObjectType.BUSH ],
+                                                [ 6, 2, 1 ] ),
                           DTType.LAKE       : ( [],
                                                 [] ),
-                          DTType.MARSH      : ( [ DecorObjectType.TREE ],
-                                                [ 1 ] ),
+                          DTType.MARSH      : ( [ DecorObjectType.TREE, DecorObjectType.BUSH ],
+                                                [ 2, 1 ] ),
                           DTType.MOUNTAIN   : ( [ DecorObjectType.MOUNTAIN, DecorObjectType.PINE ],
                                                 [ 2, 5 ] ),
     }
@@ -1324,6 +1348,11 @@ class Woodland:
                     size = random.randint( self.mountainMinSize, self.mountainMaxSize )
                     colour = LIGHT_GREY
                     colourVariance = self.mountainColourVariance
+                elif decorObjectType == Woodland.DecorObjectType.BUSH:
+                    drawFcn = Woodland.drawBush
+                    size = random.randint( self.bushMinSize, self.bushMaxSize )
+                    colour = DARK_GREEN
+                    colourVariance = self.bushColourVariance
                 
                 colour = np.array( colour )
                 # Keep the colour inside the bound of 0 to 255

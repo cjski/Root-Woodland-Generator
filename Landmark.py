@@ -58,7 +58,7 @@ class Ruin(Landmark):
 
 
 class GreatTree(Landmark):
-    size = 30
+    size = 40
     def __init__( self, pos ):
         super().__init__( pos )
         self.name = "Great Tree"

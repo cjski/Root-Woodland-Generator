@@ -286,6 +286,26 @@ class Clearing:
     def drawCorvidControl( screen, org, size ):
         Clearing.drawCorvidConspiracy( screen, org, size )
 
+    @staticmethod
+    def drawHundredsControl( screen, org, size ):
+        points = [ [.15, 0], [.3, 0], [.45, .15], [.55, .15], [.7, 0], [.85, 0], [1.0, 0.15], [1.0, .3], [.85, .45], [.75, .5], [.5, .9], [.25, .5], [.15, .45], [0.0, .3], [.0, .15] ]
+        
+        for i in range( len( points ) ):
+            points[i] = org + size * np.array( points[i] )
+
+        pygame.draw.polygon( screen, controlColours[ "Hundreds" ], points )
+        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+
+    @staticmethod
+    def drawKeepersControl( screen, org, size ):
+        points = [ [0, 1], [0, 0.64], [0.09, 0.37], [0, 0.19], [0, .1], [.1, 0], [.2, 0], [.3, .1], [.8, .2], [0.85, .25], [.85, .35], [.55, .55], [.7, 1] ]
+            
+        for i in range( len( points ) ):
+            points[i] = org + size * np.array( points[i] )
+
+        pygame.draw.polygon( screen, controlColours[ "Keepers in Iron" ], points )
+        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+
     # Methods for drawing denizens
     @staticmethod
     def drawFox( screen, org, size ):
@@ -317,6 +337,44 @@ class Clearing:
         pygame.draw.polygon( screen, controlColours[ "Denizens" ], points )
         pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
 
+    @staticmethod
+    def drawHundredsStronghold( screen, org, size ):
+        points = [ [ 0, 1], [ 1, 1], [ 1, 0.375], [ 0.875, 0.25], [ 0.75, 0.375], [ 0.75, 0.25], [ 0.5, 0], [ 0.25, 0.25], [ 0.25, 0.375], [ 0.125, 0.25], [ 0, 0.375] ]
+
+        for i in range( len( points ) ):
+            points[i] = org + size * np.array( points[i] )
+            
+        pygame.draw.polygon( screen, controlColours[ "Hundreds" ], points )
+        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+
+    @staticmethod
+    def drawMob( screen, org, size ):
+        Clearing.drawHundredsControl( screen, org, size )
+
+    @staticmethod
+    def drawHoard( screen, org, size ):
+        points = [ [0, 0], [1, 0], [1, 1], [0, 1] ]
+        
+        for i in range( len( points ) ):
+            points[i] = org + size * np.array( points[i] )
+
+        pygame.draw.polygon( screen, controlColours[ "Hundreds" ], points )
+        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+
+    @staticmethod
+    def drawWaystation( screen, org, size ):
+        points = [ [0, 0], [1, 0], [1, 1], [0, 1] ]
+        
+        for i in range( len( points ) ):
+            points[i] = org + size * np.array( points[i] )
+
+        pygame.draw.polygon( screen, controlColours[ "Keepers in Iron" ], points )
+        pygame.draw.polygon( screen, BLACK, points, width=Clearing.outlineWidth )
+
+    @staticmethod
+    def drawKeepersPresence( screen, org, size ):
+        Clearing.drawKeepersControl( screen, org, size )
+                             
     controlDict = { "Marquisate" : drawMarquisateControl,
                     "Eyrie" : drawEyrieControl,
                     "Woodland Alliance" : drawWoodlandAllianceControl,
@@ -324,6 +382,8 @@ class Clearing:
                     "Riverfolk" : drawRiverfolkControl,
                     "Grand Duchy" : drawGrandDuchyControl,
                     "Corvid Conspiracy" : drawCorvidControl,
+                    "Hundreds" : drawHundredsControl,
+                    "Keepers in Iron" : drawKeepersControl,
                     "Denizens" : drawMouse,
                     "None" : None
                     }
@@ -353,6 +413,12 @@ class Clearing:
                      "In Progress Garden":          [ "Lizard Cult", drawInProgressGarden ],
                      "Mountain":                    [ "None", None ],
                      "Marsh":                       [ "None", None ],
+                     "Hundreds Stronghold":         [ "Hundreds", drawHundredsStronghold ],
+                     "Mob":                         [ "Hundreds", drawMob ],
+                     "Hoard":                       [ "Hundreds", drawHoard ],
+                     "Waystation":                  [ "Keepers in Iron", drawWaystation ],
+                     "Keepers":                     [ "Keepers in Iron", drawKeepersPresence ],
+                     "Ruins":                       [ "None", None ],
                      }
 
     residentsDict = { "Fox" : drawFox,
@@ -403,6 +469,12 @@ class Clearing:
         self.problems = []
         self.status = 0
         self.ticksSinceLastAttack = 0
+        
+        self.hoardValue = 0
+        self.ticksSinceLastHoard = 1
+
+        # All clearings start with 2 ruins
+        self.ruins = 2
 
     def update( self ):
         self.ticksSinceLastAttack += 1
@@ -410,9 +482,32 @@ class Clearing:
             self.ticksSinceLastAttack = 0
             self.status -= 1
 
+        self.ticksSinceLastHoard += 1
+
     def increaseWarStatusBy( self, n ):
         self.status = min( self.maxStatus, self.status + n )
         self.ticksSinceLastAttack = 0
+
+    def canAddToHoard( self ):
+        return self.ticksSinceLastHoard > 0
+    
+    def addToHoard( self, n ):
+        self.ticksSinceLastHoard = 0
+        if self.hasFeature( "Hoard" ):
+            self.hoardValue += n
+        else:
+            self.addFeature( "Hoard" )
+            self.hoardValue = n
+
+    # Does this have any major features
+    def isMajorClearing( self ):
+        majorFeatures = [ "Stronghold", "Base", "Garden", "Hundreds Stronghold" ]
+
+        for feature in majorFeatures:
+            if self.hasFeature( feature ):
+                return True
+
+        return False  
 
     def generateLocalData( self ):
         # Generate important Denizens
@@ -543,6 +638,11 @@ class Clearing:
             texts.append( " - " + self.problems[i] )
             fonts.append( basicFont12 )
             colours.append( BLACK )
+
+        if self.hasFeature( "Hoard" ):
+            texts.append( "Hoard Value: " + str( self.hoardValue ) )
+            fonts.append( basicFont12)
+            colours.append( BLACK )
         
         drawTextTable( screen, pos, texts, fonts, colours, self.localInfoDrawSpacing, WHITE, BLACK )
         
@@ -553,7 +653,7 @@ class Clearing:
         return False
 
     def addFeature( self, featureString ):
-        if featureString in self.featuresDict:
+        if featureString in self.featuresDict and not self.hasFeature( featureString ):
             self.features.append(featureString)
         else:
             #debug_string("Trying to add nonexistent feature "+featureString+" to clearing "+str(clearing.id))

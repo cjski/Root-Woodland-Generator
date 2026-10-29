@@ -3,7 +3,7 @@ import random
 import math
 import numpy as np
 
-
+pygame.init()
 """
 GLOBAL SETTINGS ALL FILES NEED TO SEE
 """
@@ -57,13 +57,15 @@ DEBUG_STRING = ""
 
 controlColours = {
     "None": BLACK,
-    "Marquisate": RED,
+    "Marquisate": ORANGE,
     "Eyrie": BLUE,
     "Woodland Alliance": GREEN,
     "Lizard Cult": DARK_GREEN,
     "Riverfolk": LIGHT_BLUE,
     "Grand Duchy": PURPLE,
     "Corvid Conspiracy": GREY,
+    "Hundreds": RED,
+    "Keepers in Iron": LIGHT_GREY,
     "Denizens": YELLOW,
     }
 

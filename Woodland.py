@@ -376,6 +376,36 @@ class Woodland:
         else:
             return 0
 
+    @staticmethod
+    def hundredsRoll( self ):
+        numMobs = 0
+        
+        for clearing in self.clearings:
+            if clearing.hasFeature( "Mob" ):
+                numMobs += 1
+
+        # Originally 4
+        numMobsForBonus = self.scaleByExpectedClearings( 4 )
+        if numMobs > numMobsForBonus:
+            return 1
+        else:
+            return 0
+
+    @staticmethod
+    def keepersRoll( self ):
+        numWaystations = 0
+        
+        for clearing in self.clearings:
+            if clearing.hasFeature( "Waystation" ):
+                numWaystations += 1
+
+        # Originally 2
+        numWaystationsForBonus = self.scaleByExpectedClearings( 2 )
+        if numWaystations > numWaystationsForBonus:
+            return 1
+        else:
+            return 0
+
     possibleBuildingLosses = { "Marquisate": ["Stronghold", "Sawmill", "Recruiter", "Workshop"],
                     "Eyrie": ["Roost"],
                     "Woodland Alliance": ["Base", "Woodland Alliance Support"],
@@ -383,6 +413,8 @@ class Woodland:
                     "Riverfolk": ["Riverfolk", "Trading Post"],
                     "Grand Duchy": ["Tunnel", "Market", "Citadel"],
                     "Corvid Conspiracy": ["Corvid Conspiracy", "Plot"],
+                    "Hundreds": ["Hundreds Stronghold", "Mob", "Hoard"],
+                    "Keepers in Iron":  [ "Waystation", "Keepers" ],
                     }
 
     # Minor boon fcns
@@ -838,20 +870,210 @@ class Woodland:
 
                 toAdd.increaseWarStatusBy( 1 )
                 toAdd.control = "Corvid Conspiracy"
+
+    @staticmethod
+    def inciteMob( self, faction ):
+        canAdd = []
+
+        for clearing in self.clearings:
+            if not clearing.hasFeature( "Mob" ):
+                for connected in clearing.connected:
+                    if connected.hasFeature( "Mob" ) or connected.hasFeature( "Hundreds Stronghold" ):
+                        canAdd.append( clearing )
+                        break
+        
+        if len( canAdd ) > 0:
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
+
+            for toAdd in toAddClearings:
+                toAdd.addFeature( "Mob" )
+                print("Incite mob in " + toAdd.name)
+
+    @staticmethod
+    def destroyBuildings( self, clearing, losses, faction ):
+        # Find all destroyable buildings
+        buildings = []
+        for factionType, buildingTypes in self.possibleBuildingLosses.items():
+            # Don't destroy our own buildings
+            if factionType != faction:
+                for building in buildingTypes:
+                    if clearing.hasFeature(building):
+                        buildings.append(building)
+
+        # Fortifications are the last thing to get destroyed
+        hasFortifications = clearing.hasFeature( "Fortifications" )
+        numPossibleToLose = len(buildings)
+        if hasFortifications:
+            numPossibleToLose += 1
+            
+        losses = min(losses, numPossibleToLose)
+
+        toLose = []
+        # We have fortifications and they will be destroyed (There aren't enough other buildings
+        # to destroy)
+        if hasFortifications and losses > len(buildings):
+            toLose = random.sample( buildings, losses - 1 )
+            toLose.append( "Fortifications" )       
+        else:
+            toLose = random.sample( buildings, losses )
+                    
+        for building in toLose:
+            clearing.removeFeature( building )
+
+        return losses
+
+    @staticmethod
+    def buildHoard( self, faction ):
+        canAdd = []
+
+        for clearing in self.clearings:
+            if clearing.hasFeature( "Mob" ) and clearing.canAddToHoard():
+                canAdd.append( clearing )
+        
+        if len( canAdd ) > 0:
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
+
+            for toAdd in toAddClearings:
+                losses = rollDie(3, 1)
+
+                losses = self.destroyBuildings( self, toAdd, losses, faction )
+                # Add a hoard or add to the existing one
+                hoardValue = min( 5, losses * 5 )
+                toAdd.addToHoard( hoardValue )
+
+                toAdd.increaseWarStatusBy( 1 )
+
+                print("Build hoard in " + toAdd.name)
+                
+                    
+    @staticmethod
+    def quellMob( self, faction ):
+        canQuell = []
+        for clearing in self.clearings:
+            if clearing.control == faction and clearing.hasFeature( "Mob" ):
+                canQuell.append( clearing )
+
+        if len( canQuell ) > 0:
+            numToQuell = self.scaleByExpectedClearings( 1, 1 )
+            numToQuell = min( numToQuell, len( canQuell ) )
+            toQuellClearings = random.sample( canQuell, numToQuell )
+
+            for clearing in toQuellClearings:
+                clearing.removeFeature( "Mob" )
+
+    @staticmethod
+    def sendCadre( self, faction ):
+        canAdd = []
+        for clearing in self.clearings:
+            if not clearing.hasFeature( "Keepers" ):
+                canAdd.append( clearing )
+
+        if len( canAdd ) > 0:
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
+
+            for toAdd in toAddClearings:
+                toAdd.addFeature( "Keepers" )
+                print("Send cadre to " + toAdd.name)
+
+    @staticmethod
+    def moveWaystation( self, faction ):
+        hasWaystations = []
+        hasKeepers = []
+
+        for clearing in self.clearings:
+            if clearing.hasFeature( "Waystation" ):
+                hasWaystations.append(clearing)
+            elif clearing.hasFeature("Keepers"):
+                hasKeepers.append(clearing)
+
+        if len( hasWaystations ) > 0 and len( hasKeepers ) > 0:
+            numToMove = self.scaleByExpectedClearings( 1, 1 )
+            numToMove = min( numToMove, len( hasWaystations ), len( hasKeepers ) )
+            fromClearings = random.sample( hasWaystations, numToMove )
+            toClearings = random.sample( hasKeepers, numToMove )
+
+            for i in range(numToMove):
+                fromClearings[i].removeFeature( "Waystation" )
+                toClearings[i].addFeature( "Waystation" )
+
+    @staticmethod
+    def wildUprising( self, faction ):
+        canAdd = []
+
+        for clearing in self.clearings:
+            if clearing.hasFeature( "Mob" ) and clearing.hasFeature( "Hoard" ):
+                canAdd.append( clearing )
+
+        if len( canAdd ) > 0:
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
+
+            for toAdd in toAddClearings:
+                toAdd.removeFeature( "Fortifications" )
+
+                if toAdd.control in self.possibleBuildingLosses:
+                    for building in self.possibleBuildingLosses[ toAdd.control ]:
+                        toAdd.removeFeature( building )
+
+                toAdd.increaseWarStatusBy( 1 )
+                toAdd.control = "Hundreds"
+
+    @staticmethod
+    def establishWaystation( self, faction ):
+        canAdd = []
+
+        for clearing in self.clearings:
+            if clearing.hasFeature( "Keepers" ) and not clearing.hasFeature( "Waystation" ):
+                canAdd.append( clearing )
+
+        if len( canAdd ) > 0:
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+            toAddClearings = random.sample( canAdd, numToAdd )
+
+            for toAdd in toAddClearings:
+                toAdd.addFeature( "Waystation" )
+
+    @staticmethod
+    def discoverRuins( self, faction ):
+        canAdd = []
+
+        for clearing in self.clearings:
+            if clearing.hasFeature( "Keepers" ) and clearing.hasFeature( "Waystation" ):
+                canAdd.append( clearing )
+
+        if len( canAdd ) > 0:
+            numToAdd = self.scaleByExpectedClearings( 1, 1 )
+            numToAdd = min( numToAdd, len( canAdd ) )
+
+            sortedToAdd = sorted( canAdd, key=lambda x: x.ruins )
+
+            for i in range(numToAdd):
+                sortedToAdd[i].ruins += 1
+                
                 
     # minor, major, loss
-    controlFcns = { "Marquisate":           [marquisateRoll,    [attack, fortify, stampCells, buildIndustry, stampPlot, evictTraders],              [],                 [lossUpdate, None]],
-                    "Eyrie":                [eyrieRoll,         [attack, fortify, stampCells, stampPlot, evictTraders],                             [buildRoost],       [lossUpdate, None]],
-                    "Woodland Alliance":    [allianceRoll,      [attack, fortify, establishCells, stampPlot, evictTraders],                         [revolt],           [lossUpdate, None]],
-                    "Lizard Cult":          [lizardCultRoll,    [attack, fortify, stampCells, buildGarden, proselytize, stampPlot, evictTraders],   [rapidBuildGarden], [lossUpdate, None]],
-                    "Riverfolk":            [riverfolkRoll,     [fortify, stampCells, conductCommerce, buildTradingPost, stampPlot],                [tradeWar],         [lossUpdate, None]],
-                    "Grand Duchy":          [duchyRoll,         [attack, fortify, connectTunnel, buildDuchy, stampCells, stampPlot, evictTraders],  [],                 [lossUpdate, None]],
-                    "Corvid Conspiracy":    [corvidRoll,        [attack, fortify, stampCells, expandNetwork, enactPlot, evictTraders],              [culminatePlot],    [lossUpdate, None]],
+    controlFcns = { "Marquisate":           [marquisateRoll,    [attack, fortify, stampCells, buildIndustry, stampPlot, evictTraders, quellMob],              [],                                   [lossUpdate, None]],
+                    "Eyrie":                [eyrieRoll,         [attack, fortify, stampCells, stampPlot, evictTraders, quellMob],                             [buildRoost],                         [lossUpdate, None]],
+                    "Woodland Alliance":    [allianceRoll,      [attack, fortify, establishCells, stampPlot, evictTraders, quellMob],                         [revolt],                             [lossUpdate, None]],
+                    "Lizard Cult":          [lizardCultRoll,    [attack, fortify, stampCells, buildGarden, proselytize, stampPlot, evictTraders, quellMob],   [rapidBuildGarden],                   [lossUpdate, None]],
+                    "Riverfolk":            [riverfolkRoll,     [fortify, stampCells, conductCommerce, buildTradingPost, stampPlot, quellMob],                [tradeWar],                           [lossUpdate, None]],
+                    "Grand Duchy":          [duchyRoll,         [attack, fortify, connectTunnel, buildDuchy, stampCells, stampPlot, evictTraders, quellMob],  [],                                   [lossUpdate, None]],
+                    "Corvid Conspiracy":    [corvidRoll,        [attack, fortify, stampCells, expandNetwork, enactPlot, evictTraders, quellMob],              [culminatePlot],                      [lossUpdate, None]],
+                    "Hundreds":             [hundredsRoll,      [attack, fortify, stampCells, stampPlot, evictTraders, inciteMob, buildHoard],                [wildUprising],                       [lossUpdate, None]],
+                    "Keepers in Iron":      [keepersRoll,       [attack, fortify, stampCells, stampPlot, evictTraders, quellMob, sendCadre, moveWaystation],  [establishWaystation, discoverRuins], [lossUpdate, None]],
                     }
 
     # Initialization
     def __init__( self, pos, size, minClearingDist, enableLake=True, enableRiver=True, forceLake=False, forceRiver=False, enableMarquisate=True, enableEyrie=True, enableWoodlandAlliance=True,
-                  enableLizardCult=True, enableRiverfolk=True, enableDuchy=True, enableCorvids=True, enableMountains=True, enableMarshes=True, enableLandmarks=True ):
+                  enableLizardCult=True, enableRiverfolk=True, enableDuchy=True, enableCorvids=True, enableHundreds=True, enableKeepers=True, enableMountains=True, enableMarshes=True, enableLandmarks=True ):
         self.pos = pos
         self.size = [ max( size[0], self.minSize ), max( size[1], self.minSize ) ]
         self.minClearingDist = max( 10, minClearingDist )
@@ -897,6 +1119,8 @@ class Woodland:
                     "Riverfolk": [[], [], []],
                     "Grand Duchy": [[], [], []],
                     "Corvid Conspiracy": [[], [], []],
+                    "Hundreds": [[], [], []],
+                    "Keepers in Iron": [[], [], []],
                     "None": [[], [], []],
                     }
 
@@ -913,6 +1137,8 @@ class Woodland:
         self.enableRiverfolk = enableRiverfolk
         self.enableDuchy = enableDuchy
         self.enableCorvids = enableCorvids
+        self.enableHundreds = enableHundreds
+        self.enableKeepers = enableKeepers
 
         self.enabledFactions = { "Marquisate"           : self.enableMarquisate,
                                  "Eyrie"                : self.enableEyrie,
@@ -921,6 +1147,8 @@ class Woodland:
                                  "Riverfolk"            : self.enableRiverfolk,
                                  "Grand Duchy"          : self.enableDuchy,
                                  "Corvid Conspiracy"    : self.enableCorvids,
+                                 "Hundreds"             : self.enableHundreds,
+                                 "Keepers in Iron"      : self.enableKeepers,
                                  }
 
         self.enableMountains = enableMountains
@@ -2177,6 +2405,38 @@ class Woodland:
         if self.enableCorvids:
             self.generateCorvidConspiracyControl()
 
+        # Find an unused corner. If not, just a random clearing
+        usableCorners = []
+        for corner in self.corners:
+            if corner.control == "None":
+                usableCorners.append( corner )
+
+        hundredsStart = None
+        if len(usableCorners) > 0:
+            hundredsStart = random.sample( usableCorners, 1 )[0]
+        else:
+            usableClearings = []
+            for clearing in self.clearings:
+                if not clearing.isMajorClearing():
+                    usableClearings.append( clearing )
+
+            if len( usableClearings ) > 0:
+                hundredsStart = random.sample( usableClearings, 1 )[0]
+        
+        if self.enableHundreds:
+            self.generateHundredsControl( hundredsStart )
+
+        usableClearings = []
+        keepersStart = self.clearings[0]
+        for clearing in self.clearings:
+            if not clearing.isMajorClearing():
+                usableClearings.append( clearing )
+
+        if len( usableClearings ) > 0:
+            keepersStart = random.sample( usableClearings, 1 )[0]
+        if self.enableKeepers:
+            self.generateKeepersControl( keepersStart )
+
     def generateMarquisateControl( self, corner ):
         corner.control = "Marquisate"
         corner.addFeature( "Stronghold" )
@@ -2321,6 +2581,61 @@ class Woodland:
 
         for clearing in corvidClearings:
             clearing.addFeature( "Corvid Conspiracy" )
+
+    def generateHundredsControl( self, corner ):
+        if corner:
+            corner.addFeature( "Hundreds Stronghold" )
+            corner.addFeature( "Mob" )
+            corner.addFeature( "Horde" )
+            corner.addToHoard( 30 )
+            corner.control = "Hundreds"
+
+        corner = self.corners[0]
+        depths = self.getDepthFrom( corner )
+
+        for clearing in self.clearings:
+            if clearing.id != corner.id:
+                controlRoll = rollDie( 6, 2 ) - depths[clearing.id]
+                if controlRoll >= 10:
+                    clearing.addFeature( "Mob" )
+                elif controlRoll >= 7:
+                    if clearing.control != "None":
+                        clearing.addFeature( "Mob" )
+
+                # chance to add a horde to each mob clearing
+                if clearing.hasFeature( "Mob" ):
+                    mobRoll = rollDie( 6, 2 )
+                    losses = 0
+                    
+                    if mobRoll >= 10:
+                        losses = self.destroyBuildings( self, clearing, len( clearing.features ), "Hundreds" )
+                    elif mobRoll >= 7:
+                        losses = self.destroyBuildings( self, clearing, 2, "Hundreds" )
+
+                    hoardValue = 5 * losses
+                    clearing.addToHoard( hoardValue )
+
+    def generateKeepersControl( self, clearing ):
+        clearing.addFeature( "Waystation" )
+
+        controlRoll = rollDie( 6, 2 )
+
+        if controlRoll >= 10:
+            clearing.control = "Keepers in Iron"
+        elif controlRoll >= 7:
+            if clearing.control == "None":
+                clearing.control = "Keepers in Iron"
+
+        other = random.sample( clearing.connected, 1 )[0]
+
+        waystationRoll = rollDie( 6, 2 )
+
+        if waystationRoll >= 10:
+            other.addFeature( "Waystation" )
+        elif waystationRoll >= 7:
+            if clearing.control == "Keepers in Iron":
+                other.addFeature( "Waystation" )
+        
         
     def getDepthFrom( self, clearing ):
         depths = [0 for i in range(len(self.clearings))]

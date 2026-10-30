@@ -223,7 +223,7 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
         
         if createWidgets:
             textBox = TextBox( screen, textBoxX, textBoxY, textBoxWidth, textBoxHeight,
-                               font=commonVarsFont, borderThickness=1 )
+                               font=commonVarsFont, borderThickness=1, placeholderText="0", fontSize=12 )
             textBox.setText( commonVarsStartVals[i] )
             widgets.append( textBox )
             widgetCallbacks.append( commonVarsCallbacks[i] )

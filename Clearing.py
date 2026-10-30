@@ -643,6 +643,11 @@ class Clearing:
             texts.append( "Hoard Value: " + str( self.hoardValue ) )
             fonts.append( basicFont12)
             colours.append( BLACK )
+
+        if self.ruins > 0:
+            texts.append( "Nearby Ruins: " + str( self.ruins ) )
+            fonts.append( basicFont12)
+            colours.append( BLACK )
         
         drawTextTable( screen, pos, texts, fonts, colours, self.localInfoDrawSpacing, WHITE, BLACK )
         

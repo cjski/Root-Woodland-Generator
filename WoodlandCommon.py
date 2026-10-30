@@ -3,7 +3,6 @@ import random
 import math
 import numpy as np
 
-pygame.init()
 """
 GLOBAL SETTINGS ALL FILES NEED TO SEE
 """

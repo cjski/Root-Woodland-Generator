@@ -1,5 +1,6 @@
 import pygame
 pygame.init()
+pygame.font.init()
 
 from WoodlandCommon import *
 from Woodland import *

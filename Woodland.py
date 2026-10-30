@@ -418,7 +418,10 @@ class Woodland:
                     }
 
     # Update Action class, for the actions that woodland factions can do in each update phase. Keep the action and check for being able to do the action in each class
-    class UpdateAction:  
+    class UpdateAction:
+        def __init__(self):
+            self.actionDescriptions = []
+            
         def action(self, woodland, faction):
             return
 
@@ -428,6 +431,7 @@ class Woodland:
     # Generic attack. Hits another clearing to destroy buildings or take it over.
     class AttackAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             adjacent = [False for i in range(len(woodland.clearings))]
             numControlled = 0
             
@@ -461,6 +465,7 @@ class Woodland:
             toAttackClearings = random.sample( canAttack, numToAttack )
 
             for toAttack in toAttackClearings:
+                actionDescription = "Attacked " + toAttack.name
                 toAttack.increaseWarStatusBy( 1 )
                 
                 if toAttack.hasFeature( "Fortifications" ):
@@ -475,6 +480,7 @@ class Woodland:
                         hasBlocking = True
 
                 if not hasBlocking:
+                    actionDescription += " and took control"
                     # Clear out the previous plots and trade posts that aren't blocking features
                     if toAttack.control in woodland.possibleBuildingLosses:
                         for building in woodland.possibleBuildingLosses[ toAttack.control ]:
@@ -489,6 +495,10 @@ class Woodland:
                     if faction == "Hundreds" and numControlled == 0:
                         toAttack.addFeature( "Hundreds Stronghold" )
 
+                self.actionDescriptions.append( actionDescription )
+
+                    
+
         # You can always attack. If you don't have a clearing you'll attack from off-map
         def canDoAction(self, woodland, faction):
             return True
@@ -496,6 +506,7 @@ class Woodland:
     # Fortify an owned clearing.
     class FortifyAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             controlled = []
 
             strongholdExists = False
@@ -513,6 +524,8 @@ class Woodland:
             toFortifyClearings = random.sample( controlled, numToFortify )
 
             for toFortify in toFortifyClearings:
+                actionDescription = "Fortified " + toFortify.name
+                self.actionDescriptions.append( actionDescription )
                 toFortify.addFeature( "Fortifications" )
 
                 if faction == "Marquisate" and not strongholdExists:
@@ -531,6 +544,7 @@ class Woodland:
     # Building Woodland Alliance Cells
     class EstablishCellsAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             notControlled = []
 
             for clearing in woodland.clearings:
@@ -544,6 +558,8 @@ class Woodland:
                 toAlliance = random.sample( notControlled, numAlliance )
 
                 for clearing in toAlliance:
+                    actionDescription = "Established cells in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.addFeature( "Woodland Alliance Support" )
                     
         def canDoAction(self, woodland, faction):
@@ -555,8 +571,11 @@ class Woodland:
     # Remove woodland alliance cells
     class StampCellsAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             for clearing in woodland.clearings:
                 if clearing.control == faction:
+                    actionDescription = "Removed Woodland Alliance cells in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.removeFeature( "Woodland Alliance Support" )
                     
         def canDoAction(self, woodland, faction):
@@ -568,6 +587,7 @@ class Woodland:
     # Build Marquisate Buildings
     class BuildIndustryAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             controlled = []
 
             for clearing in woodland.clearings:
@@ -585,10 +605,16 @@ class Woodland:
                 for clearing in toAdd:
                     if not clearing.hasFeature( "Sawmill" ):
                         clearing.addFeature( "Sawmill" )
+                        actionDescription = "Built a Sawmill in " + clearing.name
+                        self.actionDescriptions.append( actionDescription )
                     elif not clearing.hasFeature( "Workshop" ):
                         clearing.addFeature( "Workshop" )
+                        actionDescription = "Built a Workshop in " + clearing.name
+                        self.actionDescriptions.append( actionDescription )
                     elif not clearing.hasFeature( "Recruiter" ):
                         clearing.addFeature( "Recruiter" )
+                        actionDescription = "Built a Recruiter in " + clearing.name
+                        self.actionDescriptions.append( actionDescription )
                     
         def canDoAction(self, woodland, faction):
             for clearing in woodland.clearings:
@@ -599,6 +625,7 @@ class Woodland:
     # Build Lizardfolk Garden
     class BuildGardenAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             almostBuilt = []
             canBuild = []
 
@@ -616,6 +643,8 @@ class Woodland:
                 toBuild = random.sample( almostBuilt, numToBuild )
         
                 for clearing in toBuild:
+                    actionDescription = "Finished building a Garden in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.addFeature( "Garden" )
                     clearing.removeFeature( "In Progress Garden" )
                     
@@ -626,6 +655,8 @@ class Woodland:
                 toBuild = random.sample( canBuild, numToBuild )
 
                 for clearing in toBuild:
+                    actionDescription = "Started building a Garden in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.addFeature( "In Progress Garden" )
                     
         def canDoAction(self, woodland, faction):
@@ -637,6 +668,7 @@ class Woodland:
     # Add Lizardfolk support
     class ProselytizeAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
             for clearing in woodland.clearings:
                 if not clearing.control == faction and not clearing.hasFeature( "Lizard Cult Support" ):
@@ -649,17 +681,20 @@ class Woodland:
                 toAdd = random.sample( canAdd, numToAdd )
 
                 for clearing in toAdd:
-                    clearing.addFeature( "Lizard Cult" )
+                    actionDescription = "Spread Lizard Cult support to " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
+                    clearing.addFeature( "Lizard Cult Support" )
                         
         def canDoAction(self, woodland, faction):
             for clearing in woodland.clearings:
-                if not clearing.hasFeature( "Lizard Cult" ) and not clearing.control == faction:
+                if not clearing.hasFeature( "Lizard Cult Support" ) and not clearing.control == faction:
                     return True
             return False
 
     # Add Riverfolk presence
     class ConductCommerceAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
             for clearing in woodland.clearings:
                 if not clearing.control == faction and not clearing.hasFeature( "Riverfolk" ):
@@ -672,6 +707,8 @@ class Woodland:
                 toAdd = random.sample( canAdd, numToAdd )
 
                 for clearing in toAdd:
+                    actionDescription = "Spread Riverfolk presence to " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.addFeature( "Riverfolk" )
                         
         def canDoAction(self, woodland, faction):
@@ -683,6 +720,7 @@ class Woodland:
     # Add Riverfolk trading post
     class BuildTradingPostAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
             for clearing in woodland.clearings:
                 if clearing.hasFeature( "Riverfolk" ) and not clearing.hasFeature( "Trading Post" ):
@@ -695,6 +733,8 @@ class Woodland:
                 toAdd = random.sample( canAdd, numToAdd )
 
                 for clearing in toAdd:
+                    actionDescription = "Built a Trading Post in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.addFeature( "Trading Post" )
                         
         def canDoAction(self, woodland, faction):
@@ -706,6 +746,7 @@ class Woodland:
     # Connect a tunnel
     class ConnectTunnelAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
             for clearing in woodland.clearings:
                 if not clearing.hasFeature( "Tunnel" ):
@@ -718,6 +759,8 @@ class Woodland:
                 toAdd = random.sample( canAdd, numToAdd )
 
                 for clearing in toAdd:
+                    actionDescription = "Connected a Tunnel to " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.addFeature( "Tunnel" )
                         
         def canDoAction(self, woodland, faction):
@@ -729,6 +772,7 @@ class Woodland:
     # Build duchy buildings
     class BuildDuchyAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             controlled = []
 
             for clearing in woodland.clearings:
@@ -743,8 +787,12 @@ class Woodland:
 
                 for clearing in toBuild:
                     if not clearing.hasFeature( "Market" ):
+                        actionDescription = "Built a Market in " + clearing.name
+                        self.actionDescriptions.append( actionDescription )
                         clearing.addFeature( "Market" )
                     elif not clearing.hasFeature( "Citadel" ):
+                        actionDescription = "Built a Citadel in " + clearing.name
+                        self.actionDescriptions.append( actionDescription )
                         clearing.addFeature( "Citadel" )
                         
         def canDoAction(self, woodland, faction):
@@ -756,6 +804,7 @@ class Woodland:
     # Spread corvid presence
     class ExpandNetworkAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             adjacent = [False for i in range(len(woodland.clearings))]
 
             for clearing in woodland.clearings:
@@ -782,6 +831,8 @@ class Woodland:
             toAddClearings = random.sample( canAdd, numToAdd )
 
             for toAdd in toAddClearings:
+                actionDescription = "Spread Corvid Presence to " + clearing.name
+                self.actionDescriptions.append( actionDescription )
                 toAdd.addFeature( "Corvid Conspiracy" )
                         
         def canDoAction(self, woodland, faction):
@@ -808,6 +859,7 @@ class Woodland:
     # Enact a corvid plot
     class EnactPlotAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             controlled = []
             for clearing in woodland.clearings:
                 if clearing.hasFeature( "Corvid Conspiracy" ) and not clearing.hasFeature( "Plot" ):
@@ -819,6 +871,8 @@ class Woodland:
                 toAddClearings = random.sample( controlled, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Started a Plot in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.addFeature( "Plot" )
                         
         def canDoAction(self, woodland, faction):
@@ -830,8 +884,11 @@ class Woodland:
     # Remove corvid plots
     class StampPlotAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             for clearing in woodland.clearings:
                 if clearing.control == faction:
+                    actionDescription = "Stamped out Plots in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.removeFeature( "Plot" )
                     clearing.removeFeature( "Corvid Conspiracy" )
                         
@@ -844,8 +901,11 @@ class Woodland:
     # Remove riverfolk trading posts
     class EvictTradersAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             for clearing in woodland.clearings:
                 if clearing.control == faction:
+                    actionDescription = "Evicted Riverfolk from " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.removeFeature( "Trading Post" )
                     clearing.removeFeature( "Riverfolk" )
                         
@@ -858,6 +918,7 @@ class Woodland:
     # Revolt in a clearing with woodland alliance support
     class RevoltAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
             for clearing in woodland.clearings:
                 if clearing.hasFeature( "Woodland Alliance Support" ) and not clearing.hasFeature( "Base" ):
@@ -869,6 +930,9 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Took over " + toAdd.name + " in a revolution"
+                    self.actionDescriptions.append( actionDescription )
+                    
                     toAdd.addFeature( "Base" )
 
                     toAdd.removeFeature( "Fortifications" )
@@ -889,6 +953,7 @@ class Woodland:
     # Build a roost
     class BuildRoostAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
             for clearing in woodland.clearings:
                 if clearing.control == faction and not clearing.hasFeature( "Roost" ):
@@ -900,6 +965,8 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Built a Roost in " + toAdd.name
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.addFeature( "Roost" )
                         
         def canDoAction(self, woodland, faction):
@@ -911,6 +978,7 @@ class Woodland:
     # Build a garden instantly
     class RapidBuildGardenAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             controlled = []
 
             for clearing in woodland.clearings:
@@ -923,6 +991,8 @@ class Woodland:
                 toAddClearings = random.sample( controlled, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Took control of " + toAdd.name + " and built a Garden"
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.addFeature( "Garden" )
                     toAdd.control = "Lizard Cult"
                         
@@ -936,6 +1006,7 @@ class Woodland:
     # Take over a clearing with a trading post
     class TradeWarAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
 
             for clearing in woodland.clearings:
@@ -948,6 +1019,8 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Took control of " + toAdd.name
+                    
                     toAdd.removeFeature( "Fortifications" )
 
                     if toAdd.control in woodland.possibleBuildingLosses:
@@ -960,7 +1033,10 @@ class Woodland:
                     for adjacent in toAdd.connected:
                         if not adjacent.hasFeature( "Trading Post" ):
                             adjacent.addFeature( "Trading Post" )
+                            actionDescription += " and built a Trading Post"
                             break
+
+                    self.actionDescriptions.append( actionDescription )
                         
         def canDoAction(self, woodland, faction):
             for clearing in woodland.clearings:
@@ -971,6 +1047,7 @@ class Woodland:
     # Culminate a plot and take over the clearing
     class CulminatePlotAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
 
             for clearing in woodland.clearings:
@@ -983,6 +1060,8 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Culminated a plot and took control of " + toAdd.name
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.removeFeature( "Fortifications" )
 
                     if toAdd.control in woodland.possibleBuildingLosses:
@@ -1001,6 +1080,7 @@ class Woodland:
     # Add a mob
     class InciteMobAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
 
             for clearing in woodland.clearings:
@@ -1016,6 +1096,8 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Incited a Mob in " + toAdd.name
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.addFeature( "Mob" )
                         
         def canDoAction(self, woodland, faction):
@@ -1062,6 +1144,7 @@ class Woodland:
     # Build or add to a hoard
     class BuildHoardAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
 
             for clearing in woodland.clearings:
@@ -1082,6 +1165,9 @@ class Woodland:
                     toAdd.addToHoard( hoardValue )
 
                     toAdd.increaseWarStatusBy( 1 )
+
+                    actionDescription = "Mob destroyed buildings in " + toAdd.name + " and built a Hoard"
+                    self.actionDescriptions.append( actionDescription )
                         
         def canDoAction(self, woodland, faction):
             for clearing in woodland.clearings:
@@ -1092,6 +1178,7 @@ class Woodland:
     # Quell mobs in controlled areas
     class QuellMobAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canQuell = []
             for clearing in woodland.clearings:
                 if clearing.control == faction and clearing.hasFeature( "Mob" ):
@@ -1103,6 +1190,8 @@ class Woodland:
                 toQuellClearings = random.sample( canQuell, numToQuell )
 
                 for clearing in toQuellClearings:
+                    actionDescription = "Quelled Mob in " + clearing.name
+                    self.actionDescriptions.append( actionDescription )
                     clearing.removeFeature( "Mob" )
                         
         def canDoAction(self, woodland, faction):
@@ -1114,6 +1203,7 @@ class Woodland:
     # Send Cadre to a new area
     class SendCadreAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
             for clearing in woodland.clearings:
                 if not clearing.hasFeature( "Keepers" ):
@@ -1125,6 +1215,8 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Sent a Cadre to " + toAdd.name
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.addFeature( "Keepers" )
                         
         def canDoAction(self, woodland, faction):
@@ -1136,6 +1228,7 @@ class Woodland:
     # Move a waystation to a new clearing
     class MoveWaystationAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             hasWaystations = []
             hasKeepers = []
 
@@ -1152,6 +1245,8 @@ class Woodland:
                 toClearings = random.sample( hasKeepers, numToMove )
 
                 for i in range(numToMove):
+                    actionDescription = "Moved a Waystation from " + fromClearings[i].name + " to " + toClearings[i].name
+                    self.actionDescriptions.append( actionDescription )
                     fromClearings[i].removeFeature( "Waystation" )
                     toClearings[i].addFeature( "Waystation" )
                         
@@ -1170,6 +1265,7 @@ class Woodland:
     # Take over a clearing with the hundreds
     class WildUprisingAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
 
             for clearing in woodland.clearings:
@@ -1182,6 +1278,8 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Incited an uprising in and took over " + toAdd.name
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.removeFeature( "Fortifications" )
 
                     if toAdd.control in woodland.possibleBuildingLosses:
@@ -1200,6 +1298,7 @@ class Woodland:
     # Add a new waystation
     class EstablishWaystationAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
 
             for clearing in woodland.clearings:
@@ -1212,6 +1311,8 @@ class Woodland:
                 toAddClearings = random.sample( canAdd, numToAdd )
 
                 for toAdd in toAddClearings:
+                    actionDescription = "Established a Waystation in " + toAdd.name
+                    self.actionDescriptions.append( actionDescription )
                     toAdd.addFeature( "Waystation" )
                         
         def canDoAction(self, woodland, faction):
@@ -1224,6 +1325,7 @@ class Woodland:
     # Add a new waystation
     class DiscoverRuinsAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             canAdd = []
 
             for clearing in woodland.clearings:
@@ -1237,6 +1339,8 @@ class Woodland:
                 sortedToAdd = sorted( canAdd, key=lambda x: x.ruins )
 
                 for i in range(numToAdd):
+                    actionDescription = "Discovered ruins near " + sortedToAdd[i].name
+                    self.actionDescriptions.append( actionDescription )
                     sortedToAdd[i].ruins += 1
                         
         def canDoAction(self, woodland, faction):
@@ -1248,6 +1352,7 @@ class Woodland:
     # Add a new waystation
     class LossAction(UpdateAction):
         def action(self, woodland, faction):
+            self.actionDescriptions = []
             control = []
             buildings = []
             for clearing in woodland.clearings:
@@ -1270,6 +1375,8 @@ class Woodland:
                 toLoseClearings = random.sample( control, numToLose )
 
                 for toLose in toLoseClearings:
+                    actionDescription = "Lost control of " + toLose.name
+                    self.actionDescriptions.append( actionDescription )
                     toLose.control = "None"
                     toLose.removeFeature( "Fortifications" )
 
@@ -1281,6 +1388,8 @@ class Woodland:
                 toLoseData = random.sample( buildings, numToLose )
                 
                 for toLose in toLoseData:
+                    actionDescription = "Lost " + toLose[1] + " in " + toLose[0].name
+                    self.actionDescriptions.append( actionDescription )
                     toLose[0].removeFeature( toLose[1] )
                         
         def canDoAction(self, woodland, faction):
@@ -1398,11 +1507,15 @@ class Woodland:
                     factionControl[i][0] += 1
 
         factionControl.sort(key=lambda x:x[0], reverse=True)
+
+        updateLog = ""
         
         for factionIndex in range( len( factionControl ) ):
             factionName = factionControl[factionIndex][1]
 
             if self.enabledFactions[ factionName ]:
+                updateLog += factionName + "\n"
+                
                 numControl = factionControl[factionIndex][0]
                 rollFcn = self.controlFcns[ factionName ][0]
                 allMinorBoonFcns = self.controlFcns[ factionName ][1]
@@ -1441,6 +1554,9 @@ class Woodland:
                     if call != None:
                         call.action( self, factionName )
 
+                        for actionDescription in call.actionDescriptions:
+                            updateLog += " " + actionDescription + "\n"
+
         # This is debug data for counting how much control each faction has        
         for clearing in self.clearings:
             control = clearing.control
@@ -1454,6 +1570,8 @@ class Woodland:
 
         for clearing in self.clearings:
             clearing.update()
+
+        print(updateLog)
 
 
     def printControlDebug( self ):

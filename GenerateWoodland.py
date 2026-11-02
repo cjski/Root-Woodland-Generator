@@ -112,7 +112,7 @@ def drawLegend( screen, pos, spacing ):
 
     for controlName in controlColours:
         factionTexts.append( controlName )
-        factionFonts.append( font12 )
+        factionFonts.append( basicFont12 )
         factionColours.append( controlColours[controlName] )
 
     factionDrawSize = drawTextTable( screen, factionDrawPos, factionTexts, factionFonts, factionColours, spacing, None, None )
@@ -130,7 +130,7 @@ def drawLegend( screen, pos, spacing ):
 
         if drawFcn != None:
             featureTexts.append( featureName )
-            featureFonts.append( font12 )
+            featureFonts.append( basicFont12 )
             featureColours.append( controlColours[control] )
 
     featureDrawSize = drawTextTable( screen, featureDrawPos, featureTexts, featureFonts, featureColours, spacing, None, None )
@@ -223,7 +223,7 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
         
         if createWidgets:
             textBox = TextBox( screen, textBoxX, textBoxY, textBoxWidth, textBoxHeight,
-                               font=commonVarsFont, borderThickness=1, placeholderText="0", fontSize=12 )
+                               font=commonVarsFont, borderThickness=1, fontSize=14 )
             textBox.setText( commonVarsStartVals[i] )
             widgets.append( textBox )
             widgetCallbacks.append( commonVarsCallbacks[i] )
@@ -424,6 +424,7 @@ def main():
     
     woodland = Woodland( mapPos, mapSize, minClearingDist )
     woodland.generate( numClearings )
+    selectedClearing = None
     
     running = True
     clock = pygame.time.Clock()
@@ -431,6 +432,8 @@ def main():
     while running:
         # Main event updates
         events = pygame.event.get()
+        mousePos = pygame.mouse.get_pos()
+        clicked = False
 
         for event in events:
             if event.type == pygame.KEYDOWN:
@@ -452,12 +455,27 @@ def main():
                     prevScreenSize = screen.get_size()
 
                     if screenSize[0] != prevScreenSize[0] or screenSize[1] != prevScreenSize[1]:
-                        screen = pygame.display.set_mode( screenSize ) 
+                        screen = pygame.display.set_mode( screenSize )
+
+                    if selectedClearing:
+                        selectedClearing.hideWidgets()
+                        selectedClearing = None
                 
                 elif event.key == pygame.K_d:
                     debug_dump()
                 elif event.key == pygame.K_u:
                     woodland.update()
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                clicked = True
+                # If we click somewhere on the map that isn't a clearing, we want to clear the selected clearing
+                if selectedClearing and mousePos[0] >= woodland.pos[0] and mousePos[0] <= woodland.pos[0] + woodland.size[0] and mousePos[1] >= woodland.pos[1] and mousePos[1] <= woodland.pos[1] + woodland.size[1]:
+                    # Turn the woodland settings back on and turn off the clearing ones
+                    for widget in widgets:
+                        widget.show()
+
+                    selectedClearing.hideWidgets()
+                    selectedClearing = None
 
             if event.type == pygame.QUIT:
                 running = False
@@ -466,20 +484,21 @@ def main():
         woodland.draw( screen )
         drawAntiRect( screen, woodland.rect, WHITE )
         legendSize = drawLegend( screen, (0, 0), spacing )
-        settingsMenuSize, _, _ = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, False )
 
-        # Update widgets
-        pygame_widgets.update( events )
-        for widgetIndex in range( len( widgets ) ):
-            widgets[widgetIndex].draw()
+        if selectedClearing:
+            editMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )
+            selectedClearing.updateEditSettingsMenu( screen, editMenuPos, spacing, False )
+        else:
+            settingsMenuSize, _, _ = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, False )
+            
+            for widgetIndex in range( len( widgets ) ):
+                widgets[widgetIndex].draw()
 
-            # Set our config data
-            if widgetCallbacks[widgetIndex]:
-                widgetCallbacks[widgetIndex]( configData, widgets[widgetIndex] )
+                # Set our config data
+                if widgetCallbacks[widgetIndex]:
+                    widgetCallbacks[widgetIndex]( configData, widgets[widgetIndex] )
         
         # If we're close enough to any clearings draw the local info
-        mousePos = pygame.mouse.get_pos()
-        
         closestClearing = None
         closestClearingDistSq = localInfoDrawDistSq
         for clearing in woodland.clearings:
@@ -492,6 +511,24 @@ def main():
         if closestClearing:
             infoDrawPos = [ mousePos[0] + 10, mousePos[1] ]
             closestClearing.drawLocalInfo( screen, infoDrawPos )
+            # If we clicked on a clearing, show the edit info
+            if clicked:
+                selectedClearing = closestClearing
+                editMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )
+                editMenuSize = closestClearing.updateEditSettingsMenu( screen, editMenuPos, spacing, True )
+        
+                screenSize = ( editMenuPos[0] + editMenuSize[0] + spacing, max( configData.mapHeight, legendSize[1], editMenuSize[1] ) + spacing + buffer )
+                prevScreenSize = screen.get_size()
+
+                if screenSize[0] != prevScreenSize[0] or screenSize[1] != prevScreenSize[1]:
+                    screen = pygame.display.set_mode( screenSize )
+
+                # Turn off the other widgets to only have the clearing settings appear
+                for widget in widgets:
+                    widget.hide()
+
+        # Update widgets - do this near the end to draw dropdowns on top of other stuff in the scene
+        pygame_widgets.update( events )
         
         # Update display
         pygame.display.update()

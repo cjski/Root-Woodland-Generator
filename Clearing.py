@@ -7,6 +7,9 @@ import random
 import numpy as np
 from scipy.spatial import Delaunay
 from scipy import interpolate as intp
+from pygame_widgets.textbox import TextBox
+from pygame_widgets.dropdown import Dropdown
+from pygame_widgets.toggle import Toggle
 
 class Clearing:
     # Data for drawing
@@ -391,33 +394,33 @@ class Clearing:
     controlDrawSize = 25
       
     featuresDict = { "Stronghold":                  [ "Marquisate", drawStronghold ],
-                     "Roost":                       [ "Eyrie", drawRoost ],
                      "Lost Marquisate Control":     [ "Marquisate", drawLostMarquisateControl ],
+                     "Workshop":                    [ "Marquisate", drawWorkshop ],
+                     "Sawmill":                     [ "Marquisate", drawSawmill ],
+                     "Recruiter":                   [ "Marquisate", drawRecruiter ],
+                     "Roost":                       [ "Eyrie", drawRoost ],
                      "Woodland Alliance Support":   [ "Woodland Alliance", drawWoodlandAllianceSupport ],
                      "Base":                        [ "Woodland Alliance", drawWoodlandAllianceBase ],
                      "Lizard Cult Support":         [ "Lizard Cult", drawLizardCultSupport ],
                      "Garden":                      [ "Lizard Cult", drawGarden ],
+                     "In Progress Garden":          [ "Lizard Cult", drawInProgressGarden ],
                      "Riverfolk":                   [ "Riverfolk", drawRiverfolk ],
+                     "Trading Post":                [ "Riverfolk", drawTradingPost ],
                      "Tunnel":                      [ "Grand Duchy", drawTunnel ],
-                     "Corvid Conspiracy":           [ "Corvid Conspiracy", drawCorvidConspiracy ],
-                     "Lake":                        [ "None", None ],
-                     "River":                       [ "None", None ],
-                     "Fortifications":              [ "None", None ],
                      "Market":                      [ "Grand Duchy", drawMarket ],
                      "Citadel":                     [ "Grand Duchy", drawCitadel ],
-                     "Workshop":                    [ "Marquisate", drawWorkshop ],
-                     "Sawmill":                     [ "Marquisate", drawSawmill ],
-                     "Recruiter":                   [ "Marquisate", drawRecruiter ],
+                     "Corvid Conspiracy":           [ "Corvid Conspiracy", drawCorvidConspiracy ],
                      "Plot":                        [ "Corvid Conspiracy", drawPlot ],
-                     "Trading Post":                [ "Riverfolk", drawTradingPost ],
-                     "In Progress Garden":          [ "Lizard Cult", drawInProgressGarden ],
-                     "Mountain":                    [ "None", None ],
-                     "Marsh":                       [ "None", None ],
                      "Hundreds Stronghold":         [ "Hundreds", drawHundredsStronghold ],
                      "Mob":                         [ "Hundreds", drawMob ],
                      "Hoard":                       [ "Hundreds", drawHoard ],
                      "Waystation":                  [ "Keepers in Iron", drawWaystation ],
                      "Keepers":                     [ "Keepers in Iron", drawKeepersPresence ],
+                     "Lake":                        [ "None", None ],
+                     "River":                       [ "None", None ],
+                     "Fortifications":              [ "None", None ],
+                     "Mountain":                    [ "None", None ],
+                     "Marsh":                       [ "None", None ],
                      "Ruins":                       [ "None", None ],
                      }
 
@@ -475,6 +478,17 @@ class Clearing:
 
         # All clearings start with 2 ruins
         self.ruins = 2
+
+        # Edit toggles
+        self.nameTextBox = None
+        self.controlDropdown = None
+        self.residentsDropdown = None
+        self.ruinsTextBox = None
+        self.hoardValueTextBox = None
+
+        self.widgets = []
+        self.featureToggles = []
+        self.featureToggleFeatures = []
 
     def update( self ):
         self.ticksSinceLastAttack += 1
@@ -678,3 +692,208 @@ class Clearing:
         else:
             #debug_string("Trying to remove nonexistent feature "+featureString+" to clearing "+str(clearing.id))
             return
+
+    def hideWidgets( self ):
+        for widget in self.widgets:
+            widget.hide()
+        for toggle in self.featureToggles:
+            toggle.hide()
+
+    def updateWidgetData( self ):
+        self.name = self.nameTextBox.getText()
+
+        newControl = self.controlDropdown.getSelected()
+        if newControl:
+            self.control = newControl
+
+        newResidents = self.residentsDropdown.getSelected()
+        if newResidents:
+            self.residents = newResidents
+
+        giveFortifications = self.fortificationsToggle.getValue()
+        if giveFortifications:
+            self.addFeature( "Fortifications" )
+        else:
+            self.removeFeature( "Fortifications" )
+
+        # Add/remove features based on what's been turned on and off
+        for i in range( len( self.featureToggles ) ):
+            feature = self.featureToggleFeatures[i]
+            toggle = self.featureToggles[i]
+
+            toggleFeatureOn = toggle.getValue()
+            if toggleFeatureOn:
+                self.addFeature( feature )
+            else:
+                self.removeFeature( feature )
+
+        newHoardValue = self.hoardValueTextBox.getText()
+        if newHoardValue.isdigit():
+            self.hoardValue = int( newHoardValue )
+        else:
+            self.hoardValue = 0
+            self.hoardValueTextBox.setText( 0 )
+
+        newRuins = self.ruinsTextBox.getText()
+        if newRuins.isdigit():
+            self.ruins = int( newRuins )
+        else:
+            self.ruins = 0
+            self.ruinsTextBox.setText( 0 )
+
+    def updateEditSettingsMenu( self, screen, pos, spacing, createWidgets ):
+        maxWidth = 0
+
+        textBoxHeightBuffer = 10
+        textBoxHalfHeightBuffer = textBoxHeightBuffer / 2
+        toggleExtraSpacing = 10
+        toggleHalfExtraSpacing = int( toggleExtraSpacing / 2 )
+
+        # Draw the title
+        titlePos = pos
+        titleFont = font16
+        titleText = self.name + " Settings"
+
+        titleSize = titleFont.size( titleText )
+        drawText( screen, titlePos, titleText, titleFont, BLACK )
+
+        maxWidth = max( maxWidth, titleSize[0] )
+
+        # Name
+        namePos = [ titlePos[0], titlePos[1] + titleSize[1] + spacing ]
+        drawText( screen, namePos + [0, textBoxHalfHeightBuffer] , "Name", basicFont14, BLACK )
+        textSize = basicFont14.size( "Name" )
+        textBoxWidth = 100
+        textBoxHeight = textSize[1] + textBoxHeightBuffer
+        if createWidgets:
+            textPos = [ namePos[0] + textSize[0] + 2 * spacing, namePos[1] ]
+            self.nameTextBox = TextBox( screen, textPos[0], textPos[1], textBoxWidth, textBoxHeight, font=basicFont14, borderThickness=1, fontSize = 14 )
+            self.nameTextBox.setText( self.name )
+
+        maxWidth = max( maxWidth, textSize[0] + textBoxWidth + spacing * 2 )
+
+        # Control
+        factionNames = [ controlName for controlName in self.controlDict ]
+        controlPos = [ namePos[0], namePos[1] + textBoxHeight + spacing ]
+        drawText( screen, controlPos + [0, textBoxHalfHeightBuffer], "Control", basicFont14, BLACK )
+        textSize = basicFont14.size( "Control" )
+        dropdownWidth = 175
+        dropdownHeight = textSize[1] + textBoxHeightBuffer
+        if createWidgets:
+            dropdownPos = [ controlPos[0] + textSize[0] + 2 * spacing, controlPos[1] ]
+            self.controlDropdown = Dropdown( screen, dropdownPos[0], dropdownPos[1], dropdownWidth, dropdownHeight, name=self.control, choices=factionNames, font=basicFont14, borderThickness=1, fontSize = 14 )
+
+        maxWidth = max( maxWidth, textSize[0] + dropdownWidth + spacing * 2 )
+
+        # Residents
+        residentsNames = [ resident for resident in self.residentsDict ]
+        residentsPos = [ controlPos[0], controlPos[1] + textBoxHeight + spacing ]
+        drawText( screen, residentsPos + [0, textBoxHalfHeightBuffer], "Residents", basicFont14, BLACK )
+        textSize = basicFont14.size( "Residents" )
+        dropdownWidth = 175
+        dropdownHeight = textSize[1] + textBoxHeightBuffer
+        if createWidgets:
+            dropdownPos = [ residentsPos[0] + textSize[0] + 2 * spacing, residentsPos[1] ]
+            self.residentsDropdown = Dropdown( screen, dropdownPos[0], dropdownPos[1], dropdownWidth, dropdownHeight, name=self.residents, choices=residentsNames, font=basicFont14, borderThickness=1, fontSize = 14 )
+
+        maxWidth = max( maxWidth, textSize[0] + dropdownWidth + spacing * 2 )
+
+        # Features
+        featuresTitlePos = [ residentsPos[0], residentsPos[1] + dropdownHeight + spacing ]
+        drawText( screen, featuresTitlePos, "Features:", basicFont16, BLACK )
+        textSize = basicFont16.size( "Features:" )
+
+        featuresPerRow = 4
+        featuresRowSpacing = 30
+        features = [[]]
+        featureIconSize = 14
+
+        for feature in self.featuresDict:
+            # Only let the user edit the ones with a draw function. We don't want them to edit river, lake, etc.
+            if self.featuresDict[ feature][1]:
+                if len( features[-1] ) >= featuresPerRow:
+                    features.append([])
+                features[-1].append( feature )
+        
+        featuresPos = [ featuresTitlePos[0] + spacing, featuresTitlePos[1] + textSize[1] + spacing ]
+        yOffset = 0
+        xOffset = 0
+
+        if createWidgets:
+            self.featureToggles = []
+            self.featureToggleFeatures = [ feature for feature in self.featuresDict if self.featuresDict[ feature][1] ]
+        
+        for row in range( len( features ) ):
+            for col in range( len( features[row] ) ):
+                text = features[row][col]
+                
+                toggleX = featuresPos[0] + xOffset
+                toggleY = featuresPos[1] + yOffset + toggleHalfExtraSpacing
+                
+                toggleWidth = featureIconSize
+                toggleHeight = featureIconSize
+
+                if createWidgets:
+                    startOn = self.hasFeature( text )
+                    toggle = Toggle( screen, toggleX, toggleY, toggleWidth, toggleHeight, startOn=startOn )
+                    self.featureToggles.append( toggle )
+
+                iconPos = [ toggleX + toggleWidth + 3 * spacing, toggleY ]
+                drawFcn = self.featuresDict[ text ][1]
+                
+                if drawFcn != None:
+                    drawFcn( screen, iconPos, featureIconSize )
+
+                xOffset += toggleWidth + featureIconSize + featuresRowSpacing
+                
+            yOffset += spacing + toggleHeight + toggleHalfExtraSpacing * 2
+            maxWidth = max( maxWidth, xOffset - featuresRowSpacing )
+            xOffset = 0
+
+        # Fortifications
+        fortificationsPos = [ featuresTitlePos[0], featuresPos[1] + yOffset + spacing ]
+        drawText( screen, fortificationsPos + [0, toggleHalfExtraSpacing], "Fortified", basicFont14, BLACK )
+        textSize = basicFont14.size( "Fortified" )
+                
+        toggleX = fortificationsPos[0] + textSize[0] + spacing + toggleHalfExtraSpacing
+        toggleY = fortificationsPos[1]
+                
+        toggleWidth = featureIconSize
+        toggleHeight = featureIconSize
+
+        if createWidgets:
+            startOn = self.hasFeature( "Fortifications" )
+            self.fortificationsToggle = Toggle( screen, toggleX, toggleY, toggleWidth, toggleHeight, startOn=startOn )
+
+        maxWidth = max( maxWidth, textSize[0] + toggleWidth + spacing * 2 )
+        
+        # Hoard Value
+        hoardPos = [ fortificationsPos[0], fortificationsPos[1] + featureIconSize + toggleExtraSpacing + spacing ]
+        drawText( screen, hoardPos + [0, textBoxHalfHeightBuffer] , "Hoard value", basicFont14, BLACK )
+        textSize = basicFont14.size( "Hoard value" )
+        textBoxWidth = 40
+        textBoxHeight = textSize[1] + textBoxHeightBuffer
+        if createWidgets:
+            textPos = [ hoardPos[0] + textSize[0] + 2 * spacing, hoardPos[1] ]
+            self.hoardValueTextBox = TextBox( screen, textPos[0], textPos[1], textBoxWidth, textBoxHeight, font=basicFont14, borderThickness=1, fontSize = 14 )
+            self.hoardValueTextBox.setText( self.hoardValue )
+
+        maxWidth = max( maxWidth, textSize[0] + textBoxWidth + spacing * 2 )
+
+        # Number of local Ruins
+        ruinsPos = [ hoardPos[0], hoardPos[1] + textBoxHeight + spacing ]
+        drawText( screen, ruinsPos + [0, textBoxHalfHeightBuffer] , "Local Ruins", basicFont14, BLACK )
+        textSize = basicFont14.size( "Local Ruins" )
+        textBoxWidth = 40
+        textBoxHeight = textSize[1] + textBoxHeightBuffer
+        if createWidgets:
+            textPos = [ ruinsPos[0] + textSize[0] + 2 * spacing, ruinsPos[1] ]
+            self.ruinsTextBox = TextBox( screen, textPos[0], textPos[1], textBoxWidth, textBoxHeight, font=basicFont14, borderThickness=1, fontSize = 14 )
+            self.ruinsTextBox.setText( self.ruins )
+
+        maxWidth = max( maxWidth, textSize[0] + textBoxWidth + spacing * 2 )
+        
+        # All widgets
+        self.widgets = [ self.nameTextBox, self.controlDropdown, self.residentsDropdown, self.fortificationsToggle, self.hoardValueTextBox, self.ruinsTextBox ]
+        self.updateWidgetData()
+        return [ maxWidth, ruinsPos[1] + textBoxHeight ]

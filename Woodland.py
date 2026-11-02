@@ -39,13 +39,13 @@ class Woodland:
     basicNames      = ["Patchwood", "Underleaf", "Pinehorn", "Sundell", "Rooston", "Milltown", "Oakenhold", "Limberly",
                        "Allaburrow", "Flathome", "Tonnery", "Firehollow", "Opensky Haven", "Talon Hill", "Pellenicky Glade",
                        "Hacksaw Dell", "Heartwood", "Sixtoe Stand", "Limmery Post", "Appleloft", "Cutter's Stump", "Greattree"]
-    riverNames      = ["Clutcher's Creek", "Sundew Bend", "Alder's Crossing", "Pebblebrook", "Runner's Falls"]
+    riverNames      = ["Clutcher's Creek", "Sundew Bend", "Alder's Crossing", "Pebblebrook", "Runner's Falls", "Longbarrow Crag"]
     mountainNames   = ["Ironvein", "Icetrap", "Windgap Refuge", "Gelilah’s Grove", "Goldton", "Climber's Respite",
                        "Snowtown", "Rickert's Mine", "Wolfepoint", "Coolclaw Mine" ]
     lakeNames       = ["Laketown", "Bertram's Cove", "Port Mysk", "Kelian's Bluffs", "Mapleharbor", "Port Sumac",
                        "Stoneshore"]
-    riverLakeNames  = ["Blackpaw's Dam", "Riversend", "Grandharbor"]
-    marshNames      = ["Wetwood", "Hookfoot Bog", "Milldew", "Orik's Marsh"]
+    riverLakeNames  = ["Blackpaw's Dam", "Riversend", "Grandharbor", "Ricklebell Falls"]
+    marshNames      = ["Wetwood", "Hookfoot Bog", "Milldew", "Orik's Marsh", "Pricklegrass Marsh"]
 
     # It's ok to have duplicates here, we weed them out later
     possibleNames = basicNames + riverNames + mountainNames + lakeNames + riverLakeNames + marshNames
@@ -257,8 +257,8 @@ class Woodland:
             if clearing.hasFeature( "Recruiter" ):
                 numTotal += 1
 
-        # Originally 4, scaled down
-        numFeaturesForBonus = self.scaleByExpectedClearings( 2 )
+        # Originally 5
+        numFeaturesForBonus = self.scaleByExpectedClearings( 5 )
         if numTotal > numFeaturesForBonus:
             return 1
         else:
@@ -276,10 +276,10 @@ class Woodland:
             if clearing.hasFeature( "Roost" ):
                 numRoosts += 1
 
-        # Originally 1
-        numRoostsForBonus = self.scaleByExpectedClearings( 0 )
-        # Originally 3
-        numClearingsForBonus = self.scaleByExpectedClearings( 2 )
+        # Originally 2
+        numRoostsForBonus = self.scaleByExpectedClearings( 2 )
+        # Originally 4
+        numClearingsForBonus = self.scaleByExpectedClearings( 4 )
         if numRoosts > numRoostsForBonus or numClearings > numClearingsForBonus:
             return 1
         else:
@@ -296,9 +296,9 @@ class Woodland:
             if clearing.hasFeature( "Woodland Alliance Support" ):
                 numSympathy += 1
 
-        # Originally 0
+        # Originally 1
         numBasesForBonus = self.scaleByExpectedClearings( 1 )
-        # Originally 2
+        # Originally 3
         numSympathyForBonus = self.scaleByExpectedClearings( 3 )
         if numBases > numBasesForBonus or numSympathy > numSympathyForBonus:
             return 1
@@ -313,8 +313,8 @@ class Woodland:
             if clearing.hasFeature( "Garden" ):
                 numGardens += 1
 
-        # Originally 1
-        numGardensForBonus = self.scaleByExpectedClearings( 1 )
+        # Originally 2
+        numGardensForBonus = self.scaleByExpectedClearings( 2 )
         if numGardens > numGardensForBonus:
             return 1
         else:
@@ -328,7 +328,7 @@ class Woodland:
             if clearing.hasFeature( "Riverfolk" ):
                 numPosts += 1
 
-        # Originally 2
+        # Originally 3
         numPostsForBonus = self.scaleByExpectedClearings( 3 )
         if numPosts > numPostsForBonus:
             return 1
@@ -350,12 +350,12 @@ class Woodland:
             if clearing.hasFeature( "Citadel" ):
                 numCitadels += 1
                 
+        # Originally 2
+        numClearingsForBonus = self.scaleByExpectedClearings( 2 )
         # Originally 1
-        numClearingsForBonus = self.scaleByExpectedClearings( 1 )
-        # Originally 0
-        numMarketsForBonus = self.scaleByExpectedClearings( 0 )
-        # Originally 0
-        numCitadelsForBonus = self.scaleByExpectedClearings( 0 )
+        numMarketsForBonus = self.scaleByExpectedClearings( 1 )
+        # Originally 1
+        numCitadelsForBonus = self.scaleByExpectedClearings( 1 )
         if numClearings > numClearingsForBonus and numMarkets > numMarketsForBonus and numCitadels > numCitadelsForBonus:
             return 1
         else:
@@ -369,7 +369,7 @@ class Woodland:
             if clearing.control == "Corvid Conspiracy":
                 numPlots += 1
 
-        # Originally 2
+        # Originally 3
         numPlotsForBonus = self.scaleByExpectedClearings( 3 )
         if numPlots > numPlotsForBonus:
             return 1

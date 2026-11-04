@@ -1,10 +1,12 @@
 # Root-Woodland-Generator
 
-<img width="2059" height="1225" alt="image" src="https://github.com/user-attachments/assets/57b0d8a9-7b8a-465f-b595-a680ef2fc6a9" />
+<img width="2055" height="1327" alt="image" src="https://github.com/user-attachments/assets/b2642f91-54eb-4d37-b798-8bebdc092812" />
 
 This is a generator for quickly creating random Woodland maps for the Root RPG. The majority of the logic is taken straight from the Root RPG Core Books with a few tweaks to make the maps look good and more connected.
 
 ## Recently added features
+- Save and Load
+- UI for generation instead of keyboard presses
 - Hundreds and Keepers in Iron
 - Update log
 - Improved update logic (Factions won't try to do something they currently can't)
@@ -33,10 +35,8 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 - Install python and the modules listed above
 - Download the repository or copy the files to your local folder
 - Run the `GenerateWoodland.py` file in your IDE or through command line with `python GenerateWoodland.py`
-
-![image](https://github.com/user-attachments/assets/2215705b-108b-4e62-b944-da36e4edfd44)
-- Hit the `R` key to generate a new map
-- Hit the `U` key to do an update of the Woodland war (As outlined in the Travelers and Outsiders book)
+- Hit the `Regen` button to generate a new map
+- Hit the `Update` button to do an update of the Woodland war (As outlined in the Travelers and Outsiders book)
   - This will cause the factions to build, attack, fortify, spread or do any other specific actions unique to their faction
 
 ![image](https://github.com/user-attachments/assets/166b30a4-96c1-4f32-b542-cded9541d79c)

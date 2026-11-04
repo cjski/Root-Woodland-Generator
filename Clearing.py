@@ -457,8 +457,8 @@ class Clearing:
     statusColours       = [GREEN, YELLOW, ORANGE, RED]
     maxStatus = len( statusDescriptions ) - 1
     statusDecreaseTicks = 6
-    
-    def __init__( self, pos ):
+   
+    def __init__( self, pos=[0,0] ):
         self.pos = pos
         self.connected = []
         self.avail_paths = 0
@@ -489,6 +489,52 @@ class Clearing:
         self.widgets = []
         self.featureToggles = []
         self.featureToggleFeatures = []
+
+    def serialize( self ):
+        data = {
+            "pos" : [ self.pos[0], self.pos[1] ],
+            "connected" : [ x.id for x in self.connected ],
+            "availPaths" : self.avail_paths,
+            "id" : self.id,
+            "residents" : self.residents,
+            "name" : self.name,
+            "control" : self.control,
+            "features" : self.features,
+            "denizens" : [ x.serialize() for x in self.denizens ],
+            "buildings" : self.buildings,
+            "problems" : self.problems,
+            "status" : self.status,
+            "ticksSinceLastAttack" : self.ticksSinceLastAttack,
+            "hoardValue" : self.hoardValue,
+            "ticksSinceLastHoard" : self.ticksSinceLastHoard,
+            "ruins" : self.ruins,
+        }
+
+        return data
+
+    def deserialize( self, data ):
+        self.pos = np.array( data["pos"] )
+        self.avail_paths = data["availPaths"]
+        self.id = data["id"]
+        self.residents = data["residents"]
+        self.name = data["name"]
+        self.control = data["control"]
+        self.features = data["features"]
+
+        for i in range( len( data["denizens"] ) ):
+            denizen = Denizen()
+            denizen.deserialize( data["denizens"][i] )
+            self.denizens.append( denizen )
+
+        self.buildings = data["buildings"]
+        self.problems = data["problems"]
+        self.status = data["status"]
+        self.ticksSinceLastAttack = data["ticksSinceLastAttack"]
+        self.ruins = data["ruins"]
+
+    # We need the ids deserialized first to rebuild connectivity data
+    def deserializeConnectivity( self, data, clearings ):
+        self.connected = [ clearings[x] for x in data["connected"] ]
 
     def update( self ):
         self.ticksSinceLastAttack += 1

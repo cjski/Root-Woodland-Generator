@@ -2,9 +2,20 @@ from WoodlandCommon import *
 import numpy as np
 
 class Path:
-    def __init__( self, clearing1, clearing2 ):
+    def __init__( self, clearing1=None, clearing2=None ):
         self.clearing1 = clearing1
         self.clearing2 = clearing2
+
+    def serialize( self ):
+        data = {
+            "clearing1" : self.clearing1.id,
+            "clearing2" : self.clearing2.id,
+        }
+        return data
+
+    def deserialize( self, data, clearings ):
+        self.clearing1 = clearings[data["clearing1"]]
+        self.clearing2 = clearings[data["clearing2"]]
   
     # Given three collinear points p, q, r, the function checks if 
     # point q lies on line segment 'pr' 

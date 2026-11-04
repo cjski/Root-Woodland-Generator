@@ -185,6 +185,21 @@ class Woodland:
             pygame.draw.polygon( screen, colours[pointsIndex], points )
             pygame.draw.polygon( screen, BLACK, points, width=self.houseOutlineWidth )
 
+    # We need to serialize the drawFunction, so use this dictionary to save and load the right function
+    DRAW_INVALID_INDEX = -1
+    DRAW_TREE_INDEX = 0
+    DRAW_MOUNTAIN_INDEX = 1
+    DRAW_PINE_INDEX = 2
+    DRAW_BUSH_INDEX = 3
+    DRAW_SMALL_HOUSE_INDEX = 4
+    
+    drawFunctionsDict = {
+        DRAW_TREE_INDEX: drawTree,
+        DRAW_MOUNTAIN_INDEX: drawMountain,
+        DRAW_PINE_INDEX: drawPine,
+        DRAW_BUSH_INDEX: drawBush,
+        DRAW_SMALL_HOUSE_INDEX: drawSmallHouse,
+    }
 
     # For each DTType, we have the draw Functions and the relative weight to draw them ( Ex 3 trees to every 1 pine )
     dtDrawDataForType = { DTType.FOREST     : ( [ DecorObjectType.TREE, DecorObjectType.PINE, DecorObjectType.BUSH ],
@@ -1444,6 +1459,8 @@ class Woodland:
         self.riverHullPoints = []
         self.bridges = []
         self.allNames = {}
+        self.landmarks = []
+        self.landmarkTypes = []
         
         self.drawGridSize = [ int( self.size[0] / self.drawGridCellSize ) + 1, int( self.size[1] / self.drawGridCellSize ) + 1 ]
         self.drawGridOpenCells = [ [ True for _ in range( self.drawGridSize[1] ) ] for _ in range( self.drawGridSize[0] ) ]
@@ -1492,7 +1509,155 @@ class Woodland:
         self.enableMarshes = enableMarshes
         self.enableLandmarks = enableLandmarks
 
+    def serialize( self ):
+        data = {
+            "pos" : self.pos,
+            "size" : self.size,
+            "minClearingDist" : self.minClearingDist,
+            "rect" : self.rect,
+            "bottom" : self.bottom,
+            "left" : self.left,
+            "top" : self.top,
+            "right" : self.right,
+            "area" : self.area,
+            "woodlandBottom" : self.woodlandBottom,
+            "woodlandLeft" : self.woodlandLeft,
+            "woodlandTop" : self.woodlandTop,
+            "woodlandRight" : self.woodlandRight,
+            "minClearingDistSq" : self.minClearingDistSq,
+            "dtTypes" : [ x.value for x in self.dtTypes ],
+            "decorPointsForDts" : self.decorPointsForDts,
+            "decorSizesForDts" : self.decorSizesForDts,
+            "decorColoursForDts" : self.decorColoursForDts,
+            "clearings" : [ x.serialize() for x in self.clearings ],
+            "paths" : [ x.serialize() for x in self.paths ],
+            "corners" : [ x.id for x in self.corners ],
+            "water" : self.water.serialize(),
+            "lakeClearings" : [x.id for x in self.lakeClearings ],
+            "lakeTris" : self.lakeTris,
+            "riverSplinePoints" : self.riverSplinePoints,
+            "riverControlPoints" : self.riverControlPoints,
+            "riverHullPoints" : self.riverHullPoints,
+            "bridges" : self.bridges,
+            "landmarks" : [ x.serialize() for x in self.landmarks ],
+            "landmarkTypes" : [ x.value for x in self.landmarkTypes ],
+            "drawGridSize" : self.drawGridSize,
+            "drawGridOpenCells" : self.drawGridOpenCells,
+            "drawGridData" : self.drawGridData,
+            "controlCountingData" : self.controlCountingData,
+            "forceLake" : self.forceLake,
+            "forceRiver" : self.forceRiver,
+            "enableLake" : self.enableLake,
+            "enableRiver" : self.enableRiver,
+            "enableMarquisate" : self.enableMarquisate,
+            "enableEyrie" : self.enableEyrie,
+            "enableWoodlandAlliance" : self.enableWoodlandAlliance,
+            "enableLizardCult" : self.enableLizardCult,
+            "enableRiverfolk" : self.enableRiverfolk,
+            "enableDuchy" : self.enableDuchy,
+            "enableCorvids" : self.enableCorvids,
+            "enableHundreds" : self.enableHundreds,
+            "enableKeepers" : self.enableKeepers,
+            "enableMountains" : self.enableMountains,
+            "enableLandmarks" : self.enableLandmarks,
+            "enableLandmarks" : self.enableLandmarks,
+        }
+
+        return data
+
+    def deserialize( self, data ):
+        self.pos = data["pos"]
+        self.size = data["size"]
+        self.minClearingDist = data["minClearingDist"]
+        self.rect = data["rect"]
+        self.bottom = data["bottom"]
+        self.left = data["left"]
+        self.top = data["top"]
+        self.right = data["right"]
+        self.area = data["area"]
+        self.woodlandBottom = data["woodlandBottom"]
+        self.woodlandLeft = data["woodlandLeft"]
+        self.woodlandTop = data["woodlandTop"]
+        self.woodlandRight = data["woodlandRight"]
+        self.dtTypes = [ DTType( x ) for x in data["dtTypes"] ]
+        self.decorPointsForDts = data["decorPointsForDts"]
+        self.decorSizesForDts = data["decorSizesForDts"]
+        self.decorColoursForDts = data["decorColoursForDts"]
+
+        self.clearings = []
+        for i in range( len( data["clearings"] ) ):
+            clearing = Clearing()
+            clearing.deserialize( data["clearings"][i] )
+            self.clearings.append( clearing )
+        # We need all of the ids to be set before doing the connectivity, so that the ids match the list
+        for i in range( len( data["clearings"] ) ):
+            self.clearings[i].deserializeConnectivity( data["clearings"][i], self.clearings )
+
+        self.paths = []
+        for i in range( len( data["paths"] ) ):
+            path = Path()
+            path.deserialize( data["paths"][i], self.clearings )
+            self.paths.append( path )
+
+        self.corners = [ self.clearings[x] for x in data["corners"] ]
+        self.water = Water()
+        self.water.deserialize( data["water"] )
+        self.lakeClearings = [ self.clearings[x] for x in data["lakeClearings"] ]
         
+        self.lakeTris = data["lakeTris"]
+        self.riverSplinePoints = data["riverSplinePoints"]
+        self.riverControlPoints = data["riverControlPoints"]
+        self.riverHullPoints = data["riverHullPoints"]
+        self.bridges = data["bridges"]
+
+        self.landmarkTypes = [ LandmarkType(x) for x in data["landmarkTypes"] ]
+        self.landmarks = []
+        for i in range( len( data["landmarks"] ) ):
+            landmarkType = self.landmarkTypes[i]
+            newLandmark = None
+            match landmarkType:
+                case LandmarkType.RUIN:
+                    newLandmark = Ruin()
+                case LandmarkType.GREATTREE:
+                    newLandmark = GreatTree()
+                case LandmarkType.SHIPWRECK:
+                    newLandmark = Shipwreck()
+                case LandmarkType.CAVE:
+                    newLandmark = Cave()
+                case LandmarkType.VOLCANO:
+                    newLandmark = Volcano()
+                case LandmarkType.BEAR:
+                    newLandmark = Bear()
+                case LandmarkType.ELK:
+                    newLandmark = Elk()
+                case LandmarkType.SHRINE:
+                    newLandmark = Shrine()
+                case _:
+                    newLandmark = Ruin()
+                    
+            newLandmark.deserialize( data["landmarks"][i] )
+            self.landmarks.append( newLandmark )
+            
+        self.drawGridSize = data["drawGridSize"]
+        self.drawGridOpenCells = data["drawGridOpenCells"]
+        self.drawGridData = data["drawGridData"]
+        self.controlCountingData = data["controlCountingData"]
+        self.forceLake = data["forceLake"]
+        self.forceRiver = data["forceRiver"]
+        self.enableLake = data["enableLake"]
+        self.enableRiver = data["enableRiver"]
+        self.enableMarquisate = data["enableMarquisate"]
+        self.enableEyrie = data["enableEyrie"]
+        self.enableWoodlandAlliance = data["enableWoodlandAlliance"]
+        self.enableLizardCult = data["enableLizardCult"]
+        self.enableRiverfolk = data["enableRiverfolk"]
+        self.enableDuchy = data["enableDuchy"]
+        self.enableCorvids = data["enableCorvids"]
+        self.enableHundreds = data["enableHundreds"]
+        self.enableKeepers = data["enableKeepers"]
+        self.enableMountains = data["enableMountains"]
+        self.enableLandmarks = data["enableLandmarks"]
+
     def update( self ):
         factionControl = [ [ 0, list( self.controlFcns.keys() )[i] ] for i in range( len( self.controlFcns ) ) ]
 
@@ -1684,11 +1849,13 @@ class Woodland:
                 x = data[0]
                 size = data[1]
                 colour = data[2]
-                drawFcn = data[3]
-
-                pos = [ x, self.pos[1] + self.drawGridCellSize * j ]
-
-                drawFcn( self, screen, pos, size, colour )
+                drawFcnIndex = data[3]
+                if drawFcnIndex in self.drawFunctionsDict:
+                    pos = [ x, self.pos[1] + self.drawGridCellSize * j ]
+                    drawFcn = self.drawFunctionsDict[ drawFcnIndex ]
+                    drawFcn( self, screen, pos, size, colour )
+                else:
+                    print(drawFcnIndex)
 
     def drawBridges( self, screen ):
         for bridge in self.bridges:
@@ -1925,10 +2092,10 @@ class Woodland:
                 size = 0
                 colour = WHITE
                 colourVariance = 0
-                drawFcn = None
+                drawFcnIndex = Woodland.DRAW_INVALID_INDEX
                 
                 if decorObjectType == Woodland.DecorObjectType.TREE:
-                    drawFcn = Woodland.drawTree
+                    drawFcnIndex = Woodland.DRAW_TREE_INDEX
                     # We have a difference between marsh and forest trees
                     if self.dtTypes[dt] == DTType.MARSH:
                         size = random.randint( self.marshTreeMinSize, self.marshTreeMaxSize )
@@ -1939,17 +2106,17 @@ class Woodland:
                         colour = DARK_GREEN
                         colourVariance = self.treeColourVariance
                 elif decorObjectType == Woodland.DecorObjectType.PINE:
-                    drawFcn = Woodland.drawPine
+                    drawFcnIndex = Woodland.DRAW_PINE_INDEX
                     size = random.randint( self.pineMinSize, self.pineMaxSize )
                     colour = DARK_GREEN
                     colourVariance = self.pineColourVariance
                 elif decorObjectType == Woodland.DecorObjectType.MOUNTAIN:
-                    drawFcn = Woodland.drawMountain
+                    drawFcnIndex = Woodland.DRAW_MOUNTAIN_INDEX
                     size = random.randint( self.mountainMinSize, self.mountainMaxSize )
                     colour = LIGHT_GREY
                     colourVariance = self.mountainColourVariance
                 elif decorObjectType == Woodland.DecorObjectType.BUSH:
-                    drawFcn = Woodland.drawBush
+                    drawFcnIndex = Woodland.DRAW_BUSH_INDEX
                     size = random.randint( self.bushMinSize, self.bushMaxSize )
                     colour = DARK_GREEN
                     colourVariance = self.bushColourVariance
@@ -1962,8 +2129,8 @@ class Woodland:
                     colour[ colourIndex ] = t
                 
                 # If theres nothing to draw don't bother adding it
-                if drawFcn:
-                    data = [ point[0], size, colour, drawFcn ]
+                if drawFcnIndex != Woodland.DRAW_INVALID_INDEX:
+                    data = [ point[0], size, colour, drawFcnIndex ]
                     i, j = self.getDrawGridIndexes( point[0], point[1] )
 
                     self.drawGridData[j].append( data )
@@ -1997,11 +2164,12 @@ class Woodland:
             
             for decorIndex in decorIndexes:
                 x = self.pos[0] + self.drawGridCellSize * decorIndex[0]
-                data = [ x, self.smallHouseSize, WHITE, Woodland.drawSmallHouse ]
+                data = [ x, self.smallHouseSize, WHITE, Woodland.DRAW_SMALL_HOUSE_INDEX ]
                 self.drawGridData[decorIndex[1]].append( data )
 
     def generateLandmarks( self ):
         self.landmarks = []
+        self.landmarkTypes = []
 
         if not self.enableLandmarks:
             return
@@ -2070,6 +2238,7 @@ class Woodland:
                         newLandmark = Ruin( spawnPos )
 
                 self.landmarks.append( newLandmark )
+                self.landmarkTypes.append( landmarkType )
                 numSpawnedLandmarks += 1
             # Try the next landmark
             landmarkIndex += 1

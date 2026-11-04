@@ -9,8 +9,15 @@ import random
 import math
 import numpy as np
 import pygame_widgets
+from enum import Enum
 from pygame_widgets.textbox import TextBox
 from pygame_widgets.toggle import Toggle
+from pygame_widgets.button import Button
+import json
+
+import tkinter as tk
+from tkinter import filedialog
+tk.Tk().withdraw()
 
 
 # Helper class to store the config data
@@ -384,6 +391,37 @@ def updateSettingsMenu( screen, pos, spacing, configData, createWidgets ):
     
     return ( [ maxWidth, otherVarsPos[1] + yOffset ], widgets, widgetCallbacks )
 
+class EventIndex(Enum):
+    NONE = 0,
+    REGEN = 1,
+    UPDATE = 2,
+    SAVE = 3,
+    LOAD = 4
+
+def updateGenerationMenu( screen, pos, spacing, mouseClickPos=[-1,-1] ):
+    buttonSize = [ 100, 40 ]
+
+    texts = [ "Regenerate", "Update", "Save", "Load" ]
+    events = [ EventIndex.REGEN, EventIndex.UPDATE, EventIndex.SAVE, EventIndex.LOAD ]
+    clickedEvent = EventIndex.NONE
+    xOffset = 0
+
+    for i in range( len( texts ) ):
+        buttonPos = [ pos[0] + xOffset, pos[1] ]
+        rect = [ buttonPos[0], buttonPos[1], buttonSize[0], buttonSize[1] ]
+        pygame.draw.rect( screen, BLACK, rect, width=3 )
+
+        textSize = basicFont14.size( texts[i] )
+        textPos = [ buttonPos[0] + ( buttonSize[0] - textSize[0] ) / 2, buttonPos[1] + ( buttonSize[1] - textSize[1] ) / 2 ]
+        drawText( screen, textPos, texts[i], basicFont14, BLACK )
+
+        xOffset += buttonSize[0] + spacing
+
+        # Check here if someone clicked one of the buttons
+        if mouseClickPos[0] >= buttonPos[0] and mouseClickPos[0] <= buttonPos[0] + buttonSize[0] and mouseClickPos[1] >= buttonPos[1] and mouseClickPos[1] <= buttonPos[1] + buttonSize[1]:
+            clickedEvent = events[i]
+
+    return ( [ xOffset, buttonSize[1] + spacing ], clickedEvent )
   
 def main():
     """
@@ -399,6 +437,7 @@ def main():
     """
     ///////////////////////////////////
     """
+
     # Data for the mouse position checks
     localInfoDrawDist = 50.0
     localInfoDrawDistSq = localInfoDrawDist * localInfoDrawDist
@@ -408,6 +447,7 @@ def main():
     # Buffer for the bottom and right edges of the map
     screen = pygame.display.set_mode( ( 1 ,1 ) )
     pygame.display.set_caption('Root Woodland')
+    woodland = None
 
     configData = ConfigData()
     
@@ -418,13 +458,16 @@ def main():
     settingsMenuPos = ( mapPos[0] + mapSize[0] + spacing * 2, 0 )
 
     settingsMenuSize, widgets, widgetCallbacks = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, True )
-        
-    screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( mapSize[1], legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
-    screen = pygame.display.set_mode( screenSize )
     
     woodland = Woodland( mapPos, mapSize, minClearingDist )
     woodland.generate( numClearings )
     selectedClearing = None
+
+    generateMenuPos = ( mapPos[0], woodland.size[1] + spacing )
+    generateMenuSize, _ = updateGenerationMenu( screen, generateMenuPos, spacing )
+
+    screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( mapSize[1] + generateMenuSize[1], legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
+    screen = pygame.display.set_mode( screenSize )
     
     running = True
     clock = pygame.time.Clock()
@@ -436,36 +479,6 @@ def main():
         clicked = False
 
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    debug_clear()
-                    
-                    woodland = Woodland( mapPos, [ configData.mapWidth, configData.mapHeight ], configData.minClearingDist,
-                                         configData.enableLake, configData.enableRiver, configData.forceLake, configData.forceRiver,
-                                         configData.enableMarquisate, configData.enableEyrie, configData.enableWoodlandAlliance,
-                                         configData.enableLizardCult, configData.enableRiverfolk, configData.enableDuchy,
-                                         configData.enableCorvids, configData.enableMountains, configData.enableMarshes,
-                                         configData.enableLandmarks )
-                    woodland.generate( configData.numClearings )
-
-                    settingsMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )
-                    settingsMenuSize, widgets, widgetCallbacks = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, True )
-        
-                    screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( configData.mapHeight, legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
-                    prevScreenSize = screen.get_size()
-
-                    if screenSize[0] != prevScreenSize[0] or screenSize[1] != prevScreenSize[1]:
-                        screen = pygame.display.set_mode( screenSize )
-
-                    if selectedClearing:
-                        selectedClearing.hideWidgets()
-                        selectedClearing = None
-                
-                elif event.key == pygame.K_d:
-                    debug_dump()
-                elif event.key == pygame.K_u:
-                    woodland.update()
-
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 clicked = True
                 # If we click somewhere on the map that isn't a clearing, we want to clear the selected clearing
@@ -497,6 +510,77 @@ def main():
                 # Set our config data
                 if widgetCallbacks[widgetIndex]:
                     widgetCallbacks[widgetIndex]( configData, widgets[widgetIndex] )
+
+        # Draw the generation buttons menu
+        mouseClickedPos = [-1, -1]
+        if clicked:
+            mouseClickedPos = mousePos
+        generateMenuSize, clickedEvent = updateGenerationMenu( screen, generateMenuPos, spacing, mouseClickedPos )
+
+        # Check if we clicked on one of those buttons
+        match clickedEvent:
+            case EventIndex.REGEN:
+                debug_clear()
+                    
+                woodland = Woodland( mapPos, [ configData.mapWidth, configData.mapHeight ], configData.minClearingDist,
+                                         configData.enableLake, configData.enableRiver, configData.forceLake, configData.forceRiver,
+                                         configData.enableMarquisate, configData.enableEyrie, configData.enableWoodlandAlliance,
+                                         configData.enableLizardCult, configData.enableRiverfolk, configData.enableDuchy,
+                                         configData.enableCorvids, configData.enableMountains, configData.enableMarshes,
+                                         configData.enableLandmarks )
+                woodland.generate( configData.numClearings )
+
+                settingsMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )
+                settingsMenuSize, widgets, widgetCallbacks = updateSettingsMenu( screen, settingsMenuPos, spacing, configData, True )
+
+                generateMenuPos = ( mapPos[0], woodland.size[1] + spacing )
+                generateMenuSize, _ = updateGenerationMenu( screen, generateMenuPos, spacing )
+        
+                screenSize = ( settingsMenuPos[0] + settingsMenuSize[0] + spacing, max( configData.mapHeight + generateMenuSize[1], legendSize[1], settingsMenuSize[1] ) + spacing + buffer )
+                prevScreenSize = screen.get_size()
+
+                if screenSize[0] != prevScreenSize[0] or screenSize[1] != prevScreenSize[1]:
+                    screen = pygame.display.set_mode( screenSize )
+
+                if selectedClearing:
+                    selectedClearing.hideWidgets()
+                    selectedClearing = None
+            case EventIndex.UPDATE:
+                woodland.update()
+            case EventIndex.SAVE:
+                filename = filedialog.asksaveasfilename(
+                    title="Save Woodland as JSON File",
+                    defaultextension=".json",
+                    filetypes=[("JSON files", "*.json")]
+                )
+                if filename:
+                    try:
+                        data = woodland.serialize()
+                        with open(filename, "w") as file:
+                            def numpy_fallback(obj):
+                                if isinstance(obj, np.ndarray):
+                                    return obj.tolist()
+                                if isinstance(obj, (np.integer, np.floating)):
+                                    return obj.item()
+                                raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+                            json.dump(data, file, default=numpy_fallback)
+                    except:
+                        print( "Could not save file" )
+            case EventIndex.LOAD:
+                filename = filedialog.askopenfilename(
+                    title="Select a saved JSON with the woodland data",
+                    filetypes=[("JSON Files", "*.json")]
+                )
+
+                if filename:
+                    try:
+                        with open(filename, 'r') as file:
+                            data = json.load(file)
+                            woodland.deserialize( data )
+                    except:
+                        print( "Could not open selected file" )
+            case _:
+                pass
         
         # If we're close enough to any clearings draw the local info
         closestClearing = None
@@ -517,7 +601,7 @@ def main():
                 editMenuPos = ( mapPos[0] + woodland.size[0] + spacing * 2, 0 )
                 editMenuSize = closestClearing.updateEditSettingsMenu( screen, editMenuPos, spacing, True )
         
-                screenSize = ( editMenuPos[0] + editMenuSize[0] + spacing, max( configData.mapHeight, legendSize[1], editMenuSize[1] ) + spacing + buffer )
+                screenSize = ( editMenuPos[0] + editMenuSize[0] + spacing, max( configData.mapHeight + generateMenuSize[1], legendSize[1], editMenuSize[1] ) + spacing + buffer )
                 prevScreenSize = screen.get_size()
 
                 if screenSize[0] != prevScreenSize[0] or screenSize[1] != prevScreenSize[1]:

@@ -56,6 +56,20 @@ class Denizen:
         self.species = ""
         self.name = random.choice( self.names )
 
+    def serialize( self ):
+        data = {
+            "occupation" : self.occupation,
+            "species" : self.species,
+            "name" : self.name,
+        }
+
+        return data
+
+    def deserialize( self, data ):
+        self.occupation = data["occupation"]
+        self.species = data["species"]
+        self.name = data["name"]
+
     def generateSpecies( self, clearing ):
         rand = random.random()
         species = ""

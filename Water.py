@@ -21,12 +21,22 @@ class Water:
     minCoastPoints = 2
     maxCoastPoints = 8
     
-    def __init__( self, triangles, riverPoints, woodland ):
+    def __init__( self, triangles=[], riverPoints=[], woodland=None ):
         self.triangles = triangles
         self.riverPoints = riverPoints
         self.hull = []
         self.woodland = woodland
-        self.generateHull()
+        if ( len( triangles ) > 0 or len( riverPoints ) > 0 ) and woodland:
+            self.generateHull()
+
+    def serialize( self ):
+        data = {
+            "hull" : self.hull,
+        }
+        return data
+
+    def deserialize( self, data ):
+        self.hull = data["hull"]
     
     def generateHull( self ):
         dt = self.woodland.tri
@@ -259,5 +269,6 @@ class Water:
         return ( p2[0] - p1[0] ) * ( p3[1] - p1[1] ) - ( p2[1] - p1[1] ) * ( p3[0] - p1[0] )
         
     def draw( self, screen ):
-        pygame.draw.polygon( screen, LIGHT_BLUE, self.hull )
+        if len( self.hull ) > 2:
+            pygame.draw.polygon( screen, LIGHT_BLUE, self.hull )
 

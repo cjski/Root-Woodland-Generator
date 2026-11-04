@@ -7,9 +7,20 @@ import numpy as np
 class Landmark:
     size = 0
     outlineWidth = 1
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         self.pos = pos
         self.name = ""
+
+    def serialize( self ):
+        data = {
+            "pos" : [ self.pos[0], self.pos[1] ],
+            "name" : self.name,
+        }
+        return data
+
+    def deserialize( self, data ):
+        self.pos = np.array( data["pos"] )
+        self.name = data["name"]
 
     def draw( self, screen ):
         return
@@ -33,7 +44,7 @@ class LandmarkType(Enum):
 
 class Ruin(Landmark):
     size = 30
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Ruins"
 
@@ -59,7 +70,7 @@ class Ruin(Landmark):
 
 class GreatTree(Landmark):
     size = 40
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Great Tree"
 
@@ -85,7 +96,7 @@ class GreatTree(Landmark):
 
 class Shipwreck(Landmark):
     size = 30
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Shipwreck"
 
@@ -111,7 +122,7 @@ class Shipwreck(Landmark):
 
 class Cave(Landmark):
     size = 40
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Old Mine"
 
@@ -138,7 +149,7 @@ class Cave(Landmark):
 
 class Volcano(Landmark):
     size = 60
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Fiery Mountain"
 
@@ -175,7 +186,7 @@ class Volcano(Landmark):
 
 class Bear(Landmark):
     size = 40
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Bear"
 
@@ -196,7 +207,7 @@ class Bear(Landmark):
 
 class Elk(Landmark):
     size = 40
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Sage"
 
@@ -216,7 +227,7 @@ class Elk(Landmark):
 
 class Shrine(Landmark):
     size = 40
-    def __init__( self, pos ):
+    def __init__( self, pos=[0,0] ):
         super().__init__( pos )
         self.name = "Shrine"
 

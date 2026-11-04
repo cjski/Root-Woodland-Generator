@@ -1,8 +1,14 @@
 # Root-Woodland-Generator
 
-![image](https://github.com/user-attachments/assets/1a21ac5e-a122-4df7-b79e-0a193cc6a80a)
+<img width="2059" height="1225" alt="image" src="https://github.com/user-attachments/assets/57b0d8a9-7b8a-465f-b595-a680ef2fc6a9" />
 
-This is a generator for quickly creating random Woodland maps for the Root RPG. The majority of the logic is taken straight from the Root Core Book and Travelers and Outsiders (For the additional factions) with a few tweaks to make the maps look good and more connected. 
+This is a generator for quickly creating random Woodland maps for the Root RPG. The majority of the logic is taken straight from the Root RPG Core Books with a few tweaks to make the maps look good and more connected.
+
+## Recently added features
+- Hundreds and Keepers in Iron
+- Update log
+- Improved update logic (Factions won't try to do something they currently can't)
+- Editable clearings
 
 ## Features
 - All the currently supported factions in the RPG
@@ -14,6 +20,7 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 - Clearing war status system
 - Customization options
 - Map decoration drawing systems
+- Editable Clearings
 
 ## Necessary Modules
 - python
@@ -37,6 +44,10 @@ This is a generator for quickly creating random Woodland maps for the Root RPG. 
 
 ![image](https://github.com/user-attachments/assets/850d7a29-90a4-4561-8990-f067ea79a8a6)
 
+## Editing Clearings
+- Click on a Clearing to show the edit menu and all options for modifying the clearing
+
+<img width="2053" height="1216" alt="image" src="https://github.com/user-attachments/assets/6e5d13e6-e7f3-48a5-a58f-41e7e8841295" />
 
 ## Customizing the Woodland
 - The basic customization options are now in the UI for easier access and faster iteration of different maps, you can edit the size, number of clearings, and enabled features and factions

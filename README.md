@@ -1,6 +1,6 @@
 # Root-Woodland-Generator
 
-<img width="2055" height="1327" alt="image" src="https://github.com/user-attachments/assets/b2642f91-54eb-4d37-b798-8bebdc092812" />
+<img width="2052" height="1309" alt="image" src="https://github.com/user-attachments/assets/c91e3713-3aae-4ab6-a1f6-d828fd44ff61" />
 
 This is a generator for quickly creating random Woodland maps for the Root RPG. The majority of the logic is taken straight from the Root RPG Core Books with a few tweaks to make the maps look good and more connected.
 

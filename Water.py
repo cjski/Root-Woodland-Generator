@@ -20,25 +20,32 @@ class Water:
     smoothingRefinements = 5
     minCoastPoints = 2
     maxCoastPoints = 8
+    sandMin = 5
+    sandMax = 12
+    sandRiverMin = 3
+    sandRiverMax = 8
     
-    def __init__( self, triangles=[], riverPoints=[], woodland=None ):
+    def __init__( self, triangles=[], riverPoints=[], riverSandPoints=[], woodland=None ):
         self.triangles = triangles
         self.riverPoints = riverPoints
         self.hull = []
+        self.sandHull = []
         self.woodland = woodland
         if ( len( triangles ) > 0 or len( riverPoints ) > 0 ) and woodland:
-            self.generateHull()
+            self.generateHull( riverSandPoints )
 
     def serialize( self ):
         data = {
             "hull" : self.hull,
+            "sandHull" : self.sandHull,
         }
         return data
 
     def deserialize( self, data ):
         self.hull = data["hull"]
+        self.sandHull = data["sandHull"]
     
-    def generateHull( self ):
+    def generateHull( self, riverSandPoints ):
         dt = self.woodland.tri
         clearings = self.woodland.clearings
         numClearings = len(clearings)
@@ -106,6 +113,7 @@ class Water:
             direction = toLeftMost[0] * toNext[1] - toLeftMost[1] * toNext[0]
 
             self.hull = []
+            self.sandHull = []
             # Biasing the point away from the clearing
             for i in range(len(pointIndexes)):
                 curr = pointIndexes[i]
@@ -119,9 +127,11 @@ class Water:
                         # Going CW so we're approaching the left side and the order of points in the river is right
                         if direction < 0:
                             self.hull += self.riverPoints
+                            self.sandHull += riverSandPoints
                         # Going CCW, so we're approaching the right side, we need to reverse this list of points
                         else:
                             self.hull += self.riverPoints[::-1]
+                            self.sandHull += riverSandPoints[::-1]
                     else:    
                         angleToNext = math.atan2( dt.points[nextPoint][1] - dt.points[curr][1], dt.points[nextPoint][0] - dt.points[curr][0] )
                         angleToPrev = math.atan2( dt.points[prevPoint][1] - dt.points[curr][1], dt.points[prevPoint][0] - dt.points[curr][0] )
@@ -143,6 +153,7 @@ class Water:
                         
                         angleDelta = endAngle - startAngle
                         coastPoints = []
+                        coastSandPoints = []
 
                         numCoastPoints = self.minCoastPoints + int( ( self.maxCoastPoints - self.minCoastPoints ) * angleDelta / ( 2 * math.pi ) )
                         
@@ -150,16 +161,22 @@ class Water:
                             angle = startAngle + cIndex * angleDelta / float( numCoastPoints - 1 )
                             rot = np.array([[ math.cos(angle), -math.sin(angle) ], [ math.sin(angle), math.cos(angle) ]])
                             point = clearing.pos + ( clearing.rad + self.fromClearingBuffer ) * np.dot( rot, np.array( [1, 0] ) )
+                            sandVariance = random.randint( self.sandMin, self.sandMax )
+                            coastSandPoint = clearing.pos + ( clearing.rad + self.fromClearingBuffer - sandVariance ) * np.dot( rot, np.array( [1, 0] ) )
                             coastPoints.append( point )
+                            coastSandPoints.append( coastSandPoint )
 
                         # Going CCW, need to flip this order
                         if direction > 0:
                             coastPoints.reverse()
+                            coastSandPoints.reverse()
 
                         self.hull += coastPoints
+                        self.sandHull += coastSandPoints
                 # If not a clearing just add in the last point
                 else:
                     self.hull += [dt.points[curr]]
+                    self.sandHull += [dt.points[curr]]
 
                 # Make the outline more complex
 
@@ -183,14 +200,21 @@ class Water:
                 for aux in range( numAuxPoints ):
                     auxPoint = self.hull[-1] + toNext
                     self.hull.append(auxPoint)
+                    self.sandHull.append(auxPoint)
 
                 firstBufferedPoint = -1
                 lastBufferedPoint = -1
+
+                # Dir < 0 is CW, shift it left
+                sandDirectionMultiplier = -1 if direction < 0 else 1
 
                 # Add some randomness and fix points too close to settlements
                 for aux in range( auxPointStart, auxPointStart + numAuxPoints ):
                     curAuxPoint = self.hull[aux]
                     curAuxPoint += right * random.uniform(-self.auxPointsVariance, self.auxPointsVariance)
+                    curAuxSandPoint = curAuxPoint + sandDirectionMultiplier * right * random.randint( self.sandMin, self.sandMax )
+                    self.sandHull[aux] = curAuxSandPoint
+                    self.hull[aux] = curAuxPoint
                     
                     isBuffer = False
                     # Push the point away from clearings its too close to
@@ -205,7 +229,9 @@ class Water:
                                 # The distance to add to this point
                                 bufferDist = np.random.uniform(low=minFarClearingDist, high=maxFarClearingDist)
                                 newPoint = curAuxPoint + ( bufferDist / currDist )*( curAuxPoint - awayClearing.pos )
+                                newSandPoint = curAuxSandPoint + ( bufferDist / currDist )*( curAuxSandPoint - awayClearing.pos )
                                 self.hull[aux] = newPoint
+                                self.sandHull[aux] = newSandPoint
 
                     if isBuffer:
                         # We need to know when the points were buffered so we can clean the rest of the ones before and after them
@@ -229,15 +255,22 @@ class Water:
                         newPoint += right * random.uniform(-self.auxPointsVariance, self.auxPointsVariance)
                         self.hull[i] = newPoint
 
+                        newSandPoint = newPoint + sandDirectionMultiplier * right * random.randint( self.sandMin, self.sandMax )
+                        self.sandHull[i] = newSandPoint
+
                     for i in range(lastBufferedPoint+1, endFixUp):
                         newPoint = self.hull[lastBufferedPoint] + endVec * (i - lastBufferedPoint)
                         newPoint += right * random.uniform(-self.auxPointsVariance, self.auxPointsVariance)
                         self.hull[i] = newPoint
 
+                        newSandPoint = newPoint + sandDirectionMultiplier * right * random.randint( self.sandMin, self.sandMax )
+                        self.sandHull[i] = newSandPoint
+
 
         # If we just have a river make that the hull
         else:
             self.hull = self.riverPoints
+            self.sandHull = riverSandPoints
 
             # Add a few points to the front and end of the river so that it goes over the edge and doesnt get visibly smoothed down by the refining
             back1 = self.riverPoints[0] - self.riverPoints[1]
@@ -246,8 +279,16 @@ class Water:
             self.hull.append( self.riverPoints[-1] + back2 )
             self.hull.append( self.riverPoints[0] + back1 )
 
+            # Add a few points to the front and end of the river so that it goes over the edge and doesnt get visibly smoothed down by the refining
+            back1Sand = riverSandPoints[0] - riverSandPoints[1]
+            back2Sand = riverSandPoints[-1] - riverSandPoints[-2]
+
+            self.sandHull.append( riverSandPoints[-1] + back2Sand )
+            self.sandHull.append( riverSandPoints[0] + back1Sand )
+
         # Smooth our water down  
         self.hull = self.smoothCorners( self.hull, self.smoothingRefinements )
+        self.sandHull = self.smoothCorners( self.sandHull, self.smoothingRefinements )
 
         
     def smoothCorners( self, points, refinements ):
@@ -269,6 +310,8 @@ class Water:
         return ( p2[0] - p1[0] ) * ( p3[1] - p1[1] ) - ( p2[1] - p1[1] ) * ( p3[0] - p1[0] )
         
     def draw( self, screen ):
+        if len( self.sandHull ) > 2:
+            pygame.draw.polygon( screen, LIGHT_YELLOW, self.sandHull )
         if len( self.hull ) > 2:
             pygame.draw.polygon( screen, LIGHT_BLUE, self.hull )
 

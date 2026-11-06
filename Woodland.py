@@ -61,8 +61,8 @@ class Woodland:
     numBorderPoints = 2
 
     # Path draw data
-    pathWidth = 4
-    pathSegmentLength = 10
+    pathWidth = 3
+    pathSegmentLength = 7
     pathSegmentSpacing = 10
     pathPointVariance = 0 # Keep this at 0 because we don't want to have to store all of the path points to do redraws
     
@@ -117,6 +117,13 @@ class Woodland:
     smallHouseSize = 30
 
     houseOutlineWidth = 1
+
+    stoneMaxSize = 7
+    stoneMinSize = 3
+    stoneColourVariance = 15
+    stonePosVariance = 8
+    stonesPerStep = 2
+    stoneStepSize = 4
 
     class DecorObjectType(Enum):
         TREE = 0
@@ -185,6 +192,11 @@ class Woodland:
             pygame.draw.polygon( screen, colours[pointsIndex], points )
             pygame.draw.polygon( screen, BLACK, points, width=self.houseOutlineWidth )
 
+    @staticmethod
+    def drawStone( self, screen, pos, size, colour ):
+        drawPos = [ pos[0], pos[1] - size / 2 ]
+        pygame.draw.circle( screen, colour, drawPos, size / 2 )
+
     # We need to serialize the drawFunction, so use this dictionary to save and load the right function
     DRAW_INVALID_INDEX = -1
     DRAW_TREE_INDEX = 0
@@ -192,6 +204,7 @@ class Woodland:
     DRAW_PINE_INDEX = 2
     DRAW_BUSH_INDEX = 3
     DRAW_SMALL_HOUSE_INDEX = 4
+    DRAW_STONE_INDEX = 5
     
     drawFunctionsDict = {
         DRAW_TREE_INDEX: drawTree,
@@ -199,6 +212,7 @@ class Woodland:
         DRAW_PINE_INDEX: drawPine,
         DRAW_BUSH_INDEX: drawBush,
         DRAW_SMALL_HOUSE_INDEX: drawSmallHouse,
+        DRAW_STONE_INDEX: drawStone,
     }
 
     # For each DTType, we have the draw Functions and the relative weight to draw them ( Ex 3 trees to every 1 pine )
@@ -1457,6 +1471,7 @@ class Woodland:
         self.riverSplinePoints = []
         self.riverControlPoints = []
         self.riverHullPoints = []
+        self.riverSandHullPoints = []
         self.bridges = []
         self.allNames = {}
         self.landmarks = []
@@ -1982,7 +1997,8 @@ class Woodland:
         self.decorColoursForDts = [ [] for i in range( numTris ) ]
 
         areaToPointsFactor = ( self.decorMaxPointsPerDt - self.decorMinPointsPerDt ) / ( self.decorMaxArea - self.decorMinArea )
-        
+
+        # First generate the decor in each triangle
         for dt in range( numTris ):
             a = self.tri.points[ self.tri.simplices[dt][0] ]
             b = self.tri.points[ self.tri.simplices[dt][1] ]
@@ -2134,6 +2150,45 @@ class Woodland:
                     i, j = self.getDrawGridIndexes( point[0], point[1] )
 
                     self.drawGridData[j].append( data )
+
+
+        # Next, generate decor data for each path
+        for path in self.paths: 
+            p1 = np.array( path.clearing1.pos )
+            p2 = np.array( path.clearing2.pos )
+
+            to = p2 - p1
+            dist = np.linalg.norm(to)
+            to = to / dist
+            right = np.array([ to[1], -to[0] ])
+
+            currentDist = 0
+
+            while currentDist < dist:
+                for i in range( self.stonesPerStep ):  
+                    pos = p1 + to * currentDist
+                    posVariance = random.randint( -self.stonePosVariance, self.stonePosVariance )
+                    pos += right * posVariance
+                        
+                    size = random.randint( self.stoneMinSize, self.stoneMaxSize )
+                    x = int( pos[0] )
+                    y = int( pos[1] )
+                    i, j = self.getDrawGridIndexes( x, y )
+
+                    if self.drawGridOpenCells[i][j]:
+                        colour = np.array( LIGHT_GREY )
+                        colourVariance = self.stoneColourVariance
+                        # Keep the colour inside the bound of 0 to 255
+                        for colourIndex in range( len( colour ) ):
+                            t = random.randint( colour[ colourIndex ] - colourVariance, colour[ colourIndex ] + colourVariance )
+                            t = min( 255, max( t, 0 ) )
+                            colour[ colourIndex ] = t
+
+
+                        data = [ pos[0], size, colour, Woodland.DRAW_STONE_INDEX ]
+                        self.drawGridData[j].append( data )
+
+                currentDist += self.stoneStepSize
 
 
     # Note that this function doesn't return an x, y coordinate in world space, it returns an i, j coordinate in draw grid space because that's what we need later.
@@ -2814,6 +2869,7 @@ class Woodland:
 
         numRiverSplinePoints = len( self.riverSplinePoints )
         self.riverHullPoints = [(0,0) for _ in range( 2 * numRiverSplinePoints )]
+        self.riverSandHullPoints = [(0,0) for _ in range( 2 * numRiverSplinePoints )]
         prevRiverLeftWidth = self.riverWidthMin + ( self.riverWidthMax - self.riverWidthMin ) / 2
         prevRiverRightWidth = prevRiverLeftWidth
                         
@@ -2843,6 +2899,15 @@ class Woodland:
 
             self.riverHullPoints[riverIndex] = leftRiverPoint
             self.riverHullPoints[-(riverIndex+1)] = rightRiverPoint
+
+            leftSandWidth = random.randint( Water.sandRiverMin, Water.sandRiverMax )
+            rightSandWidth = random.randint( Water.sandRiverMin, Water.sandRiverMax )
+
+            leftSandPoint = leftRiverPoint + leftSandWidth * left
+            rightSandPoint = rightRiverPoint + leftSandWidth * right
+
+            self.riverSandHullPoints[riverIndex] = leftSandPoint
+            self.riverSandHullPoints[-(riverIndex+1)] = rightSandPoint
 
     def getIntersectionPoint( self, p1, p2, q1, q2 ):
         a = p1[0]*p2[1] - p1[1]*p2[0]
@@ -2893,7 +2958,7 @@ class Woodland:
             self.generateBridges()
 
         if len( self.lakeTris ) > 0 or len( self.riverHullPoints ) > 0:
-            self.water = Water( self.lakeTris, self.riverHullPoints, self )
+            self.water = Water( self.lakeTris, self.riverHullPoints, self.riverSandHullPoints, self )
         
     def generateWoodlandControl( self ):
         marquisateCorner = random.randint(0, 3)

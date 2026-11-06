@@ -739,6 +739,9 @@ class Clearing:
             #debug_string("Trying to remove nonexistent feature "+featureString+" to clearing "+str(clearing.id))
             return
 
+    def isOnWater( self ):
+        return self.hasFeature( "Lake" ) or self.hasFeature( "River" )
+
     def hideWidgets( self ):
         for widget in self.widgets:
             widget.hide()

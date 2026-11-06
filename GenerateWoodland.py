@@ -617,7 +617,7 @@ def main():
         # Update display
         pygame.display.update()
 
-        clock.tick(60)
+        clock.tick(20)
 
     pygame.quit()
 
